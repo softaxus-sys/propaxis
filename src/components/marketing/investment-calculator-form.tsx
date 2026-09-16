@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { formatAed } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 function Field({
   label,
@@ -26,7 +27,7 @@ function Field({
           onChange={(e) => onChange(Number(e.target.value))}
         />
         {suffix && (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-sand-500">
+          <span className="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-xs text-sand-500">
             {suffix}
           </span>
         )}
@@ -35,7 +36,7 @@ function Field({
   );
 }
 
-export function InvestmentCalculatorForm() {
+export function InvestmentCalculatorForm({ dict }: { dict: Dictionary }) {
   const [purchasePrice, setPurchasePrice] = useState(2000000);
   const [downPaymentPct, setDownPaymentPct] = useState(25);
   const [interestRatePct, setInterestRatePct] = useState(4.5);
@@ -79,46 +80,51 @@ export function InvestmentCalculatorForm() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card className="space-y-4 p-6">
-        <Field label="Purchase price" value={purchasePrice} onChange={setPurchasePrice} suffix="AED" />
+        <Field label={dict.investmentCalculator.purchasePrice} value={purchasePrice} onChange={setPurchasePrice} suffix="AED" />
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Down payment" value={downPaymentPct} onChange={setDownPaymentPct} suffix="%" />
-          <Field label="Interest rate" value={interestRatePct} onChange={setInterestRatePct} suffix="%" />
+          <Field label={dict.investmentCalculator.downPayment} value={downPaymentPct} onChange={setDownPaymentPct} suffix="%" />
+          <Field label={dict.investmentCalculator.interestRate} value={interestRatePct} onChange={setInterestRatePct} suffix="%" />
         </div>
-        <Field label="Mortgage term" value={termYears} onChange={setTermYears} suffix="years" />
-        <Field label="Expected monthly rent" value={monthlyRent} onChange={setMonthlyRent} suffix="AED" />
+        <Field label={dict.investmentCalculator.mortgageTerm} value={termYears} onChange={setTermYears} suffix="years" />
+        <Field label={dict.investmentCalculator.monthlyRent} value={monthlyRent} onChange={setMonthlyRent} suffix="AED" />
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Annual service charge" value={annualServiceChargeAed} onChange={setAnnualServiceChargeAed} suffix="AED" />
-          <Field label="Vacancy rate" value={vacancyPct} onChange={setVacancyPct} suffix="%" />
+          <Field
+            label={dict.investmentCalculator.serviceCharge}
+            value={annualServiceChargeAed}
+            onChange={setAnnualServiceChargeAed}
+            suffix="AED"
+          />
+          <Field label={dict.investmentCalculator.vacancyRate} value={vacancyPct} onChange={setVacancyPct} suffix="%" />
         </div>
       </Card>
 
       <Card className="space-y-5 p-6">
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand-500">Down payment</p>
+          <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.downPaymentResult}</p>
           <p className="mt-1 text-xl font-semibold text-ink-950">{formatAed(result.downPayment, { compact: true })}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand-500">Monthly mortgage payment</p>
+          <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.monthlyMortgage}</p>
           <p className="mt-1 text-xl font-semibold text-ink-950">{formatAed(result.monthlyMortgage)}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-sand-500">Gross yield</p>
+            <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.grossYield}</p>
             <p className="mt-1 text-lg font-semibold text-ink-950">{result.grossYieldPct.toFixed(1)}%</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-sand-500">Net yield</p>
+            <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.netYield}</p>
             <p className="mt-1 text-lg font-semibold text-ink-950">{result.netYieldPct.toFixed(1)}%</p>
           </div>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand-500">Cash-on-cash return</p>
+          <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.cashOnCash}</p>
           <p className={`mt-1 text-xl font-semibold ${result.cashOnCashPct >= 0 ? "text-success" : "text-danger"}`}>
             {result.cashOnCashPct.toFixed(1)}%
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-sand-500">Monthly cash flow</p>
+          <p className="text-xs uppercase tracking-wide text-sand-500">{dict.investmentCalculator.monthlyCashFlow}</p>
           <p className={`mt-1 text-xl font-semibold ${result.monthlyCashFlow >= 0 ? "text-success" : "text-danger"}`}>
             {formatAed(result.monthlyCashFlow)}
           </p>

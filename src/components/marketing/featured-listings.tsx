@@ -29,7 +29,7 @@ export async function FeaturedListings({ dict }: { dict: Dictionary }) {
 
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} dict={dict} />
           ))}
         </div>
       </Container>

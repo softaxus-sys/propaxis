@@ -8,5 +8,5 @@ export default async function RentPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  return <SearchPage listingType="RENT" title="Properties for rent" basePath="/rent" searchParams={await searchParams} />;
+  return <SearchPage listingType="RENT" basePath="/rent" searchParams={await searchParams} />;
 }

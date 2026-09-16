@@ -9,18 +9,19 @@ import { Card } from "@/components/ui/card";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getPropertyPassport } from "@/modules/properties/passport";
-
-const VERIFICATION_LABEL: Record<string, string> = {
-  UNVERIFIED: "Unverified",
-  PENDING: "Verification pending",
-  VERIFIED: "Verified",
-  REJECTED: "Verification rejected",
-};
+import { getDictionary } from "@/lib/i18n/server";
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const passport = await getPropertyPassport(id);
+  const [passport, dict] = await Promise.all([getPropertyPassport(id), getDictionary()]);
   if (!passport) notFound();
+
+  const VERIFICATION_LABEL: Record<string, string> = {
+    UNVERIFIED: dict.property.unverified,
+    PENDING: dict.property.verificationPending,
+    VERIFIED: dict.property.verified,
+    REJECTED: dict.property.verificationRejected,
+  };
 
   const { listing, comparables, marketMetric } = passport;
   const { property } = listing;
@@ -40,7 +41,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <Container>
           <div className="flex flex-wrap items-center gap-2 text-sm text-sand-600">
             <Link href={listing.type === "SALE" ? "/buy" : "/rent"} className="hover:text-ink-950">
-              {listing.type === "SALE" ? "Buy" : "Rent"}
+              {listing.type === "SALE" ? dict.nav.buy : dict.nav.rent}
             </Link>
             <span>/</span>
             <span>{property.area.name}</span>
@@ -51,9 +52,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div>
                 <div className="flex items-center gap-2">
                   <Badge variant={listing.type === "SALE" ? "accent" : "info"}>
-                    {listing.type === "SALE" ? "For Sale" : "For Rent"}
+                    {listing.type === "SALE" ? dict.common.forSale : dict.common.forRent}
                   </Badge>
-                  {listing.isDemoData && <DemoDataBadge className="bg-white/90" />}
+                  {listing.isDemoData && <DemoDataBadge label={dict.common.demoData} className="bg-white/90" />}
                 </div>
                 <h1 className="mt-3 text-2xl font-semibold">{listing.title}</h1>
                 <p className="mt-1 text-sand-200">
@@ -67,15 +68,15 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="mt-6 flex items-center gap-6 text-sand-200">
               {(property.bedrooms ?? 0) > 0 && (
                 <span className="flex items-center gap-2">
-                  <BedDouble className="h-4 w-4" /> {property.bedrooms} beds
+                  <BedDouble className="h-4 w-4" /> {property.bedrooms} {dict.common.beds}
                 </span>
               )}
               <span className="flex items-center gap-2">
-                <Bath className="h-4 w-4" /> {property.bathrooms} baths
+                <Bath className="h-4 w-4" /> {property.bathrooms} {dict.common.baths}
               </span>
               {property.areaSqft && (
                 <span className="flex items-center gap-2">
-                  <Ruler className="h-4 w-4" /> {property.areaSqft.toLocaleString()} sqft
+                  <Ruler className="h-4 w-4" /> {property.areaSqft.toLocaleString()} {dict.common.sqft}
                 </span>
               )}
             </div>
@@ -85,7 +86,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="space-y-8 lg:col-span-2">
               {listing.description && (
                 <Card className="p-6">
-                  <h2 className="font-semibold text-ink-950">About this property</h2>
+                  <h2 className="font-semibold text-ink-950">{dict.property.about}</h2>
                   <p className="mt-3 text-sm leading-relaxed text-sand-700">{listing.description}</p>
                   {listing.amenities.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -103,22 +104,20 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <Card className="p-6">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-bronze-500" />
-                  <h2 className="font-semibold text-ink-950">Property Passport</h2>
+                  <h2 className="font-semibold text-ink-950">{dict.property.propertyPassport}</h2>
                 </div>
-                <p className="mt-1 text-sm text-sand-600">
-                  Everything PropAxis knows about this property — grounded in structured data.
-                </p>
+                <p className="mt-1 text-sm text-sand-600">{dict.property.passportSubtitle}</p>
 
                 <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div>
-                    <dt className="text-xs uppercase tracking-wide text-sand-500">Verification</dt>
+                    <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.verification}</dt>
                     <dd className="mt-1 text-sm font-medium text-ink-950">
                       {VERIFICATION_LABEL[property.verification?.status ?? "UNVERIFIED"]}
                     </dd>
                   </div>
                   {latestTransaction && (
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-sand-500">Last transaction</dt>
+                      <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.lastTransaction}</dt>
                       <dd className="mt-1 text-sm font-medium text-ink-950">
                         {formatAed(Number(latestTransaction.priceAed), { compact: true })}
                       </dd>
@@ -126,7 +125,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   )}
                   {latestRental && (
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-sand-500">Last rental</dt>
+                      <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.lastRental}</dt>
                       <dd className="mt-1 text-sm font-medium text-ink-950">
                         {formatAed(Number(latestRental.annualRentAed), { compact: true })}/yr
                       </dd>
@@ -134,7 +133,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   )}
                   {marketMetric?.avgPricePerSqftAed && (
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-sand-500">Area avg. AED/sqft</dt>
+                      <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.areaAvgPricePerSqft}</dt>
                       <dd className="mt-1 text-sm font-medium text-ink-950">
                         {formatAed(Number(marketMetric.avgPricePerSqftAed))}
                       </dd>
@@ -142,7 +141,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   )}
                   {marketMetric?.grossRentalYieldPct && (
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-sand-500">Area gross yield</dt>
+                      <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.areaGrossYield}</dt>
                       <dd className="mt-1 flex items-center gap-1 text-sm font-medium text-success">
                         <TrendingUp className="h-3.5 w-3.5" /> {Number(marketMetric.grossRentalYieldPct)}%
                       </dd>
@@ -150,7 +149,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   )}
                   {valuation && (
                     <div>
-                      <dt className="text-xs uppercase tracking-wide text-sand-500">Est. valuation range</dt>
+                      <dt className="text-xs uppercase tracking-wide text-sand-500">{dict.property.estValuationRange}</dt>
                       <dd className="mt-1 text-sm font-medium text-ink-950">
                         {formatAed(Number(valuation.estimatedRangeLowAed), { compact: true })} –{" "}
                         {formatAed(Number(valuation.estimatedRangeHighAed), { compact: true })}
@@ -160,15 +159,13 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 </dl>
 
                 {!latestTransaction && !latestRental && !marketMetric && (
-                  <p className="mt-4 text-sm text-sand-500">
-                    No transaction, rental or market history recorded for this property yet.
-                  </p>
+                  <p className="mt-4 text-sm text-sand-500">{dict.property.noHistoryYet}</p>
                 )}
               </Card>
 
               {comparables.length > 0 && (
                 <Card className="p-6">
-                  <h2 className="font-semibold text-ink-950">Comparable listings</h2>
+                  <h2 className="font-semibold text-ink-950">{dict.property.comparableListings}</h2>
                   <div className="mt-4 divide-y divide-sand-100">
                     {comparables.map((c) => (
                       <Link
@@ -194,7 +191,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="space-y-6">
               {listing.agent && (
                 <Card className="p-6">
-                  <h3 className="font-semibold text-ink-950">Listed by</h3>
+                  <h3 className="font-semibold text-ink-950">{dict.property.listedBy}</h3>
                   <Link href={`/agents/${listing.agent.slug}`} className="mt-3 flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-950 text-sm font-semibold text-white">
                       {listing.agent.user.name?.[0] ?? "A"}
@@ -207,7 +204,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 </Card>
               )}
 
-              <EnquiryForm listingId={listing.id} agentId={listing.agentId} />
+              <EnquiryForm listingId={listing.id} agentId={listing.agentId} dict={dict} />
             </div>
           </div>
         </Container>

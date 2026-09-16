@@ -4,11 +4,12 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 const PROPERTY_TYPES = ["APARTMENT", "VILLA", "TOWNHOUSE", "PENTHOUSE", "DUPLEX", "PLOT", "OFFICE", "RETAIL"];
 const BEDROOM_OPTIONS = [0, 1, 2, 3, 4, 5];
 
-export function SearchFilters() {
+export function SearchFilters({ dict }: { dict: Dictionary }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -35,10 +36,10 @@ export function SearchFilters() {
           <Input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="Area, building or project"
+            placeholder={dict.search.locationPlaceholder}
           />
           <Button type="submit" variant="outline">
-            Go
+            {dict.search.go}
           </Button>
         </form>
 
@@ -47,7 +48,7 @@ export function SearchFilters() {
           value={searchParams.get("propertyType") ?? ""}
           onChange={(e) => updateParam("propertyType", e.target.value)}
         >
-          <option value="">Property type</option>
+          <option value="">{dict.search.propertyTypeLabel}</option>
           {PROPERTY_TYPES.map((t) => (
             <option key={t} value={t}>
               {t.charAt(0) + t.slice(1).toLowerCase()}
@@ -60,24 +61,24 @@ export function SearchFilters() {
           value={searchParams.get("bedrooms") ?? ""}
           onChange={(e) => updateParam("bedrooms", e.target.value)}
         >
-          <option value="">Bedrooms</option>
+          <option value="">{dict.search.bedroomsLabel}</option>
           {BEDROOM_OPTIONS.map((b) => (
             <option key={b} value={b}>
-              {b === 0 ? "Studio" : `${b}+`}
+              {b === 0 ? dict.search.studio : `${b}+`}
             </option>
           ))}
         </select>
 
         <Input
           type="number"
-          placeholder="Min price (AED)"
+          placeholder={dict.search.minPrice}
           className="lg:w-40"
           defaultValue={searchParams.get("minPrice") ?? ""}
           onBlur={(e) => updateParam("minPrice", e.target.value)}
         />
         <Input
           type="number"
-          placeholder="Max price (AED)"
+          placeholder={dict.search.maxPrice}
           className="lg:w-40"
           defaultValue={searchParams.get("maxPrice") ?? ""}
           onBlur={(e) => updateParam("maxPrice", e.target.value)}

@@ -8,5 +8,5 @@ export default async function BuyPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  return <SearchPage listingType="SALE" title="Properties for sale" basePath="/buy" searchParams={await searchParams} />;
+  return <SearchPage listingType="SALE" basePath="/buy" searchParams={await searchParams} />;
 }

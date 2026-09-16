@@ -27,6 +27,6 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 /** Marks a value/section that is not sourced from a real or licensed feed. See docs/ARCHITECTURE.md §6. */
-export function DemoDataBadge({ className }: { className?: string }) {
-  return <span className={cn("demo-data-badge", className)}>Demo data</span>;
+export function DemoDataBadge({ className, label = "Demo data" }: { className?: string; label?: string }) {
+  return <span className={cn("demo-data-badge", className)}>{label}</span>;
 }

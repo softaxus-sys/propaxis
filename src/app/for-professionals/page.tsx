@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "For Professionals" };
 
@@ -29,24 +30,20 @@ const SECTIONS = [
   },
 ];
 
-export default function ForProfessionalsPage() {
+export default async function ForProfessionalsPage() {
+  const dict = await getDictionary();
+
   return (
     <>
       <SiteHeader />
       <main className="flex-1">
         <section className="bg-ink-950 py-16 text-white">
           <Container>
-            <h1 className="max-w-xl text-3xl font-semibold">Built for the professional ecosystem</h1>
-            <p className="mt-4 max-w-xl text-sand-200">
-              Agents, agencies and developers all run on PropAxis — with business activity flowing into{" "}
-              <Link href="/vrodux" className="underline underline-offset-4">
-                VRODUX
-              </Link>{" "}
-              when you&apos;re ready.
-            </p>
+            <h1 className="max-w-xl text-3xl font-semibold">{dict.staticPages.forProfessionalsTitle}</h1>
+            <p className="mt-4 max-w-xl text-sand-200">{dict.staticPages.forProfessionalsSubtitle}</p>
             <Link href="/register">
               <Button variant="accent" size="lg" className="mt-6">
-                Create a professional account
+                {dict.staticPages.createProfessionalAccount}
               </Button>
             </Link>
           </Container>

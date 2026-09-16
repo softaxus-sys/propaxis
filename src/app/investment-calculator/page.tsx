@@ -3,21 +3,22 @@ import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { InvestmentCalculatorForm } from "@/components/marketing/investment-calculator-form";
 import { Container } from "@/components/ui/container";
+import { getDictionary } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Investment Calculator" };
 
-export default function InvestmentCalculatorPage() {
+export default async function InvestmentCalculatorPage() {
+  const dict = await getDictionary();
+
   return (
     <>
       <SiteHeader />
       <main className="flex-1 bg-sand-50 py-10">
         <Container className="max-w-3xl">
-          <h1 className="text-2xl font-semibold text-ink-950">Investment Calculator</h1>
-          <p className="mt-1 text-sm text-sand-600">
-            Estimate mortgage payments, rental yield and cash flow for a potential purchase.
-          </p>
+          <h1 className="text-2xl font-semibold text-ink-950">{dict.investmentCalculator.pageTitle}</h1>
+          <p className="mt-1 text-sm text-sand-600">{dict.investmentCalculator.pageSubtitle}</p>
           <div className="mt-6">
-            <InvestmentCalculatorForm />
+            <InvestmentCalculatorForm dict={dict} />
           </div>
         </Container>
       </main>

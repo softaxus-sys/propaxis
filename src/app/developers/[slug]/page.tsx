@@ -7,13 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
+import { getDictionary } from "@/lib/i18n/server";
 
 export default async function DeveloperProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const developer = await db.developer.findUnique({
-    where: { slug },
-    include: { projects: { include: { area: true } } },
-  });
+  const [developer, dict] = await Promise.all([
+    db.developer.findUnique({ where: { slug }, include: { projects: { include: { area: true } } } }),
+    getDictionary(),
+  ]);
   if (!developer) notFound();
 
   return (
@@ -23,14 +24,14 @@ export default async function DeveloperProfilePage({ params }: { params: Promise
         <Container>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-ink-950">{developer.name}</h1>
-            {developer.isVerified && <Badge variant="success">Verified</Badge>}
-            {developer.isDemoData && <DemoDataBadge />}
+            {developer.isVerified && <Badge variant="success">{dict.property.verified}</Badge>}
+            {developer.isDemoData && <DemoDataBadge label={dict.common.demoData} />}
           </div>
           {developer.description && <p className="mt-2 max-w-2xl text-sm text-sand-600">{developer.description}</p>}
 
-          <h2 className="mt-10 text-lg font-semibold text-ink-950">Projects</h2>
+          <h2 className="mt-10 text-lg font-semibold capitalize text-ink-950">{dict.developers.projectsLabel}</h2>
           {developer.projects.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-600">No projects published yet.</p>
+            <p className="mt-4 text-sm text-sand-600">{dict.developers.noProjectsYet}</p>
           ) : (
             <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {developer.projects.map((project) => (
@@ -40,8 +41,8 @@ export default async function DeveloperProfilePage({ params }: { params: Promise
                     <p className="mt-1 text-sm text-sand-600">{project.area.name}</p>
                     <p className="mt-3 text-sm font-medium text-ink-950">
                       {project.startingPriceAed
-                        ? `From ${formatAed(Number(project.startingPriceAed), { compact: true })}`
-                        : "Price on request"}
+                        ? `${dict.newProjects.startingFrom} ${formatAed(Number(project.startingPriceAed), { compact: true })}`
+                        : dict.newProjects.priceOnRequest}
                     </p>
                   </Card>
                 </Link>

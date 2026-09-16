@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { Card } from "@/components/ui/card";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 /** The minimal shape ListingCard needs — any listing query that includes at least
  * `property.area` satisfies this, regardless of what else it joins. */
@@ -22,7 +23,7 @@ export type ListingCardData = {
   };
 };
 
-export function ListingCard({ listing }: { listing: ListingCardData }) {
+export function ListingCard({ listing, dict }: { listing: ListingCardData; dict: Dictionary }) {
   const price =
     listing.type === "SALE"
       ? formatAed(Number(listing.askingPriceAed ?? 0), { compact: true })
@@ -33,9 +34,11 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
       <Card className="overflow-hidden transition-shadow group-hover:shadow-md">
         <div className="relative flex h-44 items-end bg-gradient-to-br from-ink-800 to-ink-950 p-4">
           <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute start-4 top-4">
-            {listing.type === "SALE" ? "For Sale" : "For Rent"}
+            {listing.type === "SALE" ? dict.common.forSale : dict.common.forRent}
           </Badge>
-          {listing.isDemoData && <DemoDataBadge className="absolute end-4 top-4 bg-white/90" />}
+          {listing.isDemoData && (
+            <DemoDataBadge label={dict.common.demoData} className="absolute end-4 top-4 bg-white/90" />
+          )}
           <span className="text-lg font-semibold text-white">{price}</span>
         </div>
 
@@ -56,7 +59,7 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
             </span>
             {listing.property.areaSqft && (
               <span className="flex items-center gap-1.5">
-                <Ruler className="h-4 w-4" /> {listing.property.areaSqft.toLocaleString()} sqft
+                <Ruler className="h-4 w-4" /> {listing.property.areaSqft.toLocaleString()} {dict.common.sqft}
               </span>
             )}
           </div>
