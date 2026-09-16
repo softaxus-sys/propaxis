@@ -13,16 +13,19 @@ const SECTIONS = [
     id: "agents",
     title: "Agents & Brokers",
     points: ["Manage listings and leads in one place", "AI copilot for descriptions and follow-ups", "Track viewings and client conversations"],
+    cta: { href: "/register?type=agent", label: "Register as an agent" },
   },
   {
     id: "agencies",
     title: "Agencies",
     points: ["Team-wide CRM and lead distribution", "Performance analytics per agent", "Verified agency profile on the marketplace"],
+    cta: { href: "/register?type=agency", label: "Register your agency" },
   },
   {
     id: "developers",
     title: "Developers",
     points: ["Publish projects with unit-level availability", "Payment plans and floor plans", "Capture and manage off-plan leads"],
+    cta: { href: "/contact", label: "Contact us" },
   },
 ];
 
@@ -59,6 +62,11 @@ export default function ForProfessionalsPage() {
                     <li key={p}>• {p}</li>
                   ))}
                 </ul>
+                <Link href={s.cta.href} className="mt-4 inline-block">
+                  <Button variant="outline" size="sm">
+                    {s.cta.label}
+                  </Button>
+                </Link>
               </Card>
             ))}
           </Container>

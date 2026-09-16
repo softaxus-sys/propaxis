@@ -134,18 +134,28 @@ reports) is a separate tool namespace scoped to the authenticated agent/agency's
 
 ## 7. VRODUX integration
 
-PropAxis and VRODUX are **separate systems, separate databases**. Integration is API/webhook-based via
-`src/modules/vrodux-integration/`, which defines a `VroduxProvider` interface (create/update contact,
-push lead, push opportunity, sync deal status) with a `MockVroduxProvider` for local dev and a place to
-drop in the real client later. Flow:
+PropAxis and VRODUX are **separate systems, separate databases**. VRODUX is itself multi-tenant, and the
+connection is **per-agency, not global**: Softaxus's own internal VRODUX usage (tenant "Softaxus
+Technologies") is unrelated to this entirely. Any PropAxis `Agency` that wants VRODUX signs up for its
+own VRODUX tenant and connects it independently, from its own agency dashboard.
+
+The actual mechanism is VRODUX's existing per-tenant **lead-intake webhook** — the same one VRODUX
+already exposes for Property Finder, Bayut and plain web forms. An agency admin pastes that webhook URL
+into `/agency/dashboard/vrodux` (stored as `Agency.vroduxWebhookUrl`); PropAxis then POSTs every new lead
+for that agency's listings straight to it. No API key/OAuth needed — it's the same integration shape a
+form builder would use. `src/modules/vrodux-integration/` is the only module allowed to know this:
+`VroduxProvider` is the interface, `WebhookVroduxProvider` is the real (already-working) implementation,
+and `NoOpVroduxProvider` is what an unconnected agency gets (leads simply stay in PropAxis only).
 
 ```
-PropAxis Listing → Enquiry → PropAxis Lead → [vrodux-integration] → VRODUX CRM
-                                                                        ↓
-                                                        Follow-up → Opportunity → Deal
-                                                                        ↓
-                                                        (status synced back into PropAxis Lead)
+Agency connects its VRODUX webhook URL (per agency, one-time, in its own dashboard)
+                            ↓
+PropAxis Listing → Enquiry → PropAxis Lead → POST to that agency's VRODUX webhook
 ```
+
+Webhooks are intake-only — there's no equivalent mechanism yet for syncing Opportunity/Deal stage
+changes back into PropAxis, so `pushOpportunity`/`pushDeal` on `VroduxProvider` are no-ops today, kept
+for if/when VRODUX exposes a bidirectional API.
 
 ## 8. Security & RBAC
 

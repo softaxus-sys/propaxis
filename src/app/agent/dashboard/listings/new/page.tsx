@@ -10,6 +10,9 @@ export default async function NewListingPage() {
   if (!session?.user) redirect("/login");
   if (!requireRole(session.user.role as never, ["AGENT", "AGENCY_ADMIN", "ADMIN"])) redirect("/dashboard");
 
+  const agent = await db.agent.findUnique({ where: { userId: session.user.id } });
+  if (!agent?.isVerified) redirect("/agent/dashboard");
+
   const areas = await db.area.findMany({ orderBy: { name: "asc" } });
 
   return (

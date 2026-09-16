@@ -1,17 +1,24 @@
 import type { VroduxProvider } from "./provider";
-import { MockVroduxProvider } from "./mock-provider";
+import { WebhookVroduxProvider } from "./webhook-provider";
+import { NoOpVroduxProvider } from "./noop-provider";
+
+export type AgencyVroduxConnection = {
+  vroduxWebhookUrl: string | null;
+};
 
 /**
- * Resolves the active VRODUX provider. Falls back to the mock provider whenever
- * VRODUX_API_URL isn't configured (local dev, or before the real integration ships) —
- * see docs/ARCHITECTURE.md §7. Swap in a real HTTP-backed VroduxProvider here once
- * the VRODUX API contract is available; nothing else in the codebase needs to change.
+ * Resolves the VRODUX provider for a specific Agency. VRODUX is multi-tenant, and
+ * connecting it is per-agency, not global: each agency that wants VRODUX signs up for
+ * its own VRODUX tenant and pastes that tenant's lead-intake webhook URL into its
+ * PropAxis agency settings (see src/app/agency/dashboard/vrodux) — this has nothing to
+ * do with whichever tenant Softaxus uses for its own internal VRODUX usage. An agency
+ * with no webhook configured gets `NoOpVroduxProvider` (leads stay in PropAxis only).
+ * See docs/ARCHITECTURE.md §7.
  */
-export function getVroduxProvider(): VroduxProvider {
-  if (!process.env.VRODUX_API_URL) {
-    return new MockVroduxProvider();
+export function getVroduxProvider(connection: AgencyVroduxConnection | null | undefined): VroduxProvider {
+  if (!connection?.vroduxWebhookUrl) {
+    return new NoOpVroduxProvider();
   }
 
-  // TODO: return a real HTTP-backed VroduxProvider once the VRODUX API is available.
-  return new MockVroduxProvider();
+  return new WebhookVroduxProvider(connection.vroduxWebhookUrl);
 }

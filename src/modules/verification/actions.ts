@@ -46,3 +46,67 @@ export async function reviewVerification(formData: FormData) {
 
   revalidatePath("/admin/dashboard");
 }
+
+const reviewAgentSchema = z.object({
+  agentId: z.string().min(1),
+  decision: z.enum(["true", "false"]),
+});
+
+/** Approve/reject a self-registered agent — see registerAgent's comment for context. */
+export async function reviewAgentVerification(formData: FormData) {
+  const session = await auth();
+  if (!can(session?.user?.role as never, "verification:review")) return;
+
+  const parsed = reviewAgentSchema.safeParse({
+    agentId: formData.get("agentId"),
+    decision: formData.get("decision"),
+  });
+  if (!parsed.success) return;
+
+  const isVerified = parsed.data.decision === "true";
+  await db.agent.update({ where: { id: parsed.data.agentId }, data: { isVerified } });
+
+  await db.auditLog.create({
+    data: {
+      userId: session!.user.id,
+      action: "agent.verification_reviewed",
+      entityType: "Agent",
+      entityId: parsed.data.agentId,
+      metadata: { isVerified },
+    },
+  });
+
+  revalidatePath("/admin/dashboard");
+}
+
+const reviewAgencySchema = z.object({
+  agencyId: z.string().min(1),
+  decision: z.enum(["true", "false"]),
+});
+
+/** Approve/reject a self-registered agency — see registerAgency's comment for context. */
+export async function reviewAgencyVerification(formData: FormData) {
+  const session = await auth();
+  if (!can(session?.user?.role as never, "verification:review")) return;
+
+  const parsed = reviewAgencySchema.safeParse({
+    agencyId: formData.get("agencyId"),
+    decision: formData.get("decision"),
+  });
+  if (!parsed.success) return;
+
+  const isVerified = parsed.data.decision === "true";
+  await db.agency.update({ where: { id: parsed.data.agencyId }, data: { isVerified } });
+
+  await db.auditLog.create({
+    data: {
+      userId: session!.user.id,
+      action: "agency.verification_reviewed",
+      entityType: "Agency",
+      entityId: parsed.data.agencyId,
+      metadata: { isVerified },
+    },
+  });
+
+  revalidatePath("/admin/dashboard");
+}

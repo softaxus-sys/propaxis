@@ -20,3 +20,12 @@ export function formatAed(amount: number | string, options?: { compact?: boolean
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+export function slugify(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}

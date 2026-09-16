@@ -124,6 +124,15 @@ model Agency {
   isVerified Boolean @default(false)
   isDemoData Boolean @default(false)
 
+  // VRODUX is multi-tenant: each PropAxis Agency that wants VRODUX signs up for its
+  // OWN VRODUX tenant and connects it here via VRODUX's per-tenant lead-intake webhook
+  // (the same mechanism VRODUX already exposes for Property Finder/Bayut/web forms) —
+  // this is unrelated to whichever tenant Softaxus itself uses internally. No webhook
+  // configured means leads simply stay in PropAxis only. See docs/ARCHITECTURE.md §7
+  // and vrodux-integration/provider.ts.
+  vroduxWebhookUrl  String?
+  vroduxConnectedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

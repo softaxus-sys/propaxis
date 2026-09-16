@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { requireRole } from "@/modules/auth/rbac";
 
-const NAV = [{ href: "/agency/dashboard", label: "Overview" }];
+const NAV = [
+  { href: "/agency/dashboard", label: "Overview" },
+  { href: "/agency/dashboard/vrodux", label: "VRODUX" },
+];
 
 export default async function AgencyDashboardPage() {
   const session = await auth();

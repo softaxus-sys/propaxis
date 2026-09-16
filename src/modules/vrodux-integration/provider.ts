@@ -33,12 +33,16 @@ export type VroduxDealInput = {
   finalValueAed?: number;
 };
 
+/** `vroduxRefId` is best-effort — VRODUX's lead-intake webhook doesn't guarantee a
+ * structured id back, so this is often empty even on a successful push. */
 export type VroduxRef = { vroduxRefId: string };
 
 /**
- * Everything PropAxis needs from VRODUX's CRM. A real implementation talks to the
- * VRODUX API over HTTP; `MockVroduxProvider` is the local-dev stand-in until that
- * client exists.
+ * Everything PropAxis needs from VRODUX. `pushLead` is implemented today via VRODUX's
+ * per-tenant lead-intake webhook (the same mechanism it already exposes for Property
+ * Finder/Bayut/web forms — see WebhookVroduxProvider). `pushOpportunity`/`pushDeal`
+ * are kept for a future bidirectional integration once VRODUX exposes an API for them;
+ * a lead-intake webhook is one-directional and has no equivalent for those today.
  */
 export interface VroduxProvider {
   pushLead(input: VroduxLeadInput): Promise<VroduxRef>;

@@ -56,28 +56,38 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
   });
 
   const listing = listingId
-    ? await db.listing.findUnique({ where: { id: listingId } })
+    ? await db.listing.findUnique({ where: { id: listingId }, include: { agency: true } })
     : null;
   const project = projectId ? await db.project.findUnique({ where: { id: projectId } }) : null;
+  const directAgent = agentId ? await db.agent.findUnique({ where: { id: agentId }, include: { agency: true } }) : null;
 
-  try {
-    const vrodux = getVroduxProvider();
-    const { vroduxRefId } = await vrodux.pushLead({
-      externalLeadId: lead.id,
-      contact: { name, email, phone },
-      source: source === "AI_SEARCH" ? "PropAxis AI Search" : "PropAxis Website Enquiry",
-      subject: listing?.title ?? project?.name ?? "General enquiry",
-      message,
-    });
+  // Which agency's VRODUX tenant (if any) this lead's push is scoped to — resolved
+  // from the listing's agency, or the directly-contacted agent's agency. Projects
+  // belong to developers, not agencies, so a project-only enquiry has no VRODUX target.
+  const agency = listing?.agency ?? directAgent?.agency ?? null;
 
-    await db.lead.update({
-      where: { id: lead.id },
-      data: { vroduxSyncedAt: new Date(), vroduxRefId },
-    });
-  } catch (err) {
-    // Lead is already persisted in PropAxis; VRODUX sync is best-effort and can be
-    // retried later without blocking the customer's enquiry from succeeding.
-    console.error("[leads] VRODUX sync failed", err);
+  if (agency?.vroduxWebhookUrl) {
+    try {
+      const vrodux = getVroduxProvider(agency);
+      const { vroduxRefId } = await vrodux.pushLead({
+        externalLeadId: lead.id,
+        contact: { name, email, phone },
+        source: source === "AI_SEARCH" ? "PropAxis AI Search" : "PropAxis Website Enquiry",
+        subject: listing?.title ?? project?.name ?? "General enquiry",
+        message,
+      });
+
+      // A successful call (no throw) means the webhook accepted the lead — mark it
+      // synced even if VRODUX's response didn't include a structured ref id back.
+      await db.lead.update({
+        where: { id: lead.id },
+        data: { vroduxSyncedAt: new Date(), vroduxRefId: vroduxRefId || null },
+      });
+    } catch (err) {
+      // Lead is already persisted in PropAxis; VRODUX sync is best-effort and can be
+      // retried later without blocking the customer's enquiry from succeeding.
+      console.error("[leads] VRODUX sync failed", err);
+    }
   }
 
   return { success: true };

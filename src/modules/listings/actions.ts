@@ -39,6 +39,9 @@ export async function createListing(_prev: CreateListingState, formData: FormDat
 
   const agent = await db.agent.findUnique({ where: { userId: session!.user.id } });
   if (!agent) return { error: "No agent profile found for this account." };
+  if (!agent.isVerified) {
+    return { error: "Your agent profile is still pending verification. You'll be able to publish listings once an admin approves it." };
+  }
 
   const parsed = createListingSchema.safeParse({
     title: formData.get("title"),

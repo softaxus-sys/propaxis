@@ -51,10 +51,23 @@ export default async function AgentDashboardPage() {
     <DashboardShell userName={session.user.name ?? ""} roleLabel="Agent" nav={NAV}>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-ink-950">Your listings</h1>
-        <Link href="/agent/dashboard/listings/new">
-          <Button size="sm">New listing</Button>
-        </Link>
+        {agent.isVerified ? (
+          <Link href="/agent/dashboard/listings/new">
+            <Button size="sm">New listing</Button>
+          </Link>
+        ) : (
+          <Button size="sm" disabled>
+            New listing
+          </Button>
+        )}
       </div>
+
+      {!agent.isVerified && (
+        <div className="mt-4 rounded-xl border border-bronze-300 bg-bronze-50 px-4 py-3 text-sm text-bronze-600">
+          Your agent profile is pending admin verification. You can explore the dashboard now, but you
+          won&apos;t be able to publish listings until it&apos;s approved.
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-3 gap-4">
         <Card className="p-4">
