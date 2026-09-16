@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/*
+ * PropAxis design tokens.
+ * Identity: deep ink navy + warm bronze accent — deliberately distinct from
+ * Property Finder (blue) and Bayut (green). Warm neutrals instead of flat
+ * gray to read as premium rather than generic SaaS.
+ */
+:root {
+  --color-ink-950: #0a0f1f;
+  --color-ink-900: #0f1730;
+  --color-ink-800: #172142;
+  --color-ink-700: #212d54;
+  --color-ink-600: #2e3c6b;
+
+  --color-bronze-50: #fbf6ee;
+  --color-bronze-100: #f4e8d2;
+  --color-bronze-200: #e8cd9d;
+  --color-bronze-300: #dbb26c;
+  --color-bronze-400: #cc9948;
+  --color-bronze-500: #b8823a;
+  --color-bronze-600: #96682e;
+
+  --color-sand-50: #faf9f7;
+  --color-sand-100: #f4f1ec;
+  --color-sand-200: #e8e2d6;
+  --color-sand-300: #d6cdb9;
+  --color-sand-400: #b3a68a;
+  --color-sand-500: #8c7d5f;
+  --color-sand-600: #6b5f47;
+  --color-sand-700: #4d4433;
+
+  --color-success: #1f8a5f;
+  --color-warning: #b8822f;
+  --color-danger: #b8402f;
+  --color-info: #2e5f9b;
+
+  --background: #ffffff;
+  --foreground: var(--color-ink-950);
+
+  --radius-card: 0.875rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-ink-950: var(--color-ink-950);
+  --color-ink-900: var(--color-ink-900);
+  --color-ink-800: var(--color-ink-800);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-600: var(--color-ink-600);
+
+  --color-bronze-50: var(--color-bronze-50);
+  --color-bronze-100: var(--color-bronze-100);
+  --color-bronze-200: var(--color-bronze-200);
+  --color-bronze-300: var(--color-bronze-300);
+  --color-bronze-400: var(--color-bronze-400);
+  --color-bronze-500: var(--color-bronze-500);
+  --color-bronze-600: var(--color-bronze-600);
+
+  --color-sand-50: var(--color-sand-50);
+  --color-sand-100: var(--color-sand-100);
+  --color-sand-200: var(--color-sand-200);
+  --color-sand-300: var(--color-sand-300);
+  --color-sand-400: var(--color-sand-400);
+  --color-sand-500: var(--color-sand-500);
+  --color-sand-600: var(--color-sand-600);
+  --color-sand-700: var(--color-sand-700);
+
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-info: var(--color-info);
+
+  --font-sans: var(--font-inter);
+  --font-arabic: var(--font-noto-kufi-arabic);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-arabic), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Demo/development data badge used across the app wherever a value is not
+   sourced from a real/licensed feed — see docs/ARCHITECTURE.md §6. */
+.demo-data-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--color-sand-100);
+  color: var(--color-sand-700);
+  border: 1px solid var(--color-sand-300);
+}

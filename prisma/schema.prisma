@@ -1,0 +1,821 @@
+// PropAxis.ae — core data model
+// Source of truth for the platform's domain model. See docs/ARCHITECTURE.md §4 for the
+// design rules behind this file (asking vs. transaction price separation, verification,
+// demo-data flagging, etc).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Auth (Auth.js / NextAuth adapter models) + RBAC
+// ─────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  AGENT
+  AGENCY_ADMIN
+  DEVELOPER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  passwordHash  String?
+  role          Role      @default(USER)
+  locale        String    @default("en") // "en" | "ar"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  agent                Agent?
+  admin                Admin?
+  developerMemberships DeveloperTeamMember[]
+
+  savedProperties SavedProperty[]
+  savedSearches   SavedSearch[]
+  leadsAsCustomer Lead[]           @relation("LeadCustomer")
+  viewings        Viewing[]        @relation("ViewingCustomer")
+  aiConversations AIConversation[]
+  auditLogs       AuditLog[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Admin {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Professional ecosystem: Agents, Agencies, Developers
+// ─────────────────────────────────────────────────────────────────────────
+
+model Agency {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  logoUrl     String?
+  description String? @db.Text
+  ridNumber   String? // RERA/DED registered agency number (UAE)
+  website     String?
+  phone       String?
+  email       String?
+
+  isVerified Boolean @default(false)
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agents   Agent[]
+  listings Listing[]
+
+  @@index([slug])
+  @@map("agencies")
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  slug        String   @unique
+  bio         String?  @db.Text
+  headshotUrl String?
+  languages   String[] // e.g. ["en", "ar", "ur"]
+  ridNumber   String? // RERA broker card / agent registration number
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  isVerified Boolean @default(false)
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings Listing[]
+  leads    Lead[]
+  viewings Viewing[] @relation("ViewingAgent")
+
+  @@index([agencyId])
+  @@map("agents")
+}
+
+model Developer {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  logoUrl     String?
+  description String? @db.Text
+  website     String?
+
+  isVerified Boolean @default(false)
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects    Project[]
+  buildings   Building[]
+  teamMembers DeveloperTeamMember[]
+
+  @@index([slug])
+  @@map("developers")
+}
+
+// Join table: which User accounts (role DEVELOPER) can manage a given Developer
+// company's projects/units. A developer company can have several staff users.
+model DeveloperTeamMember {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, developerId])
+  @@map("developer_team_members")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Geography: Areas, Buildings, Projects
+// ─────────────────────────────────────────────────────────────────────────
+
+model Area {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  name         String
+  nameAr       String?
+  city         String  @default("Dubai")
+  emirate      String  @default("Dubai")
+  description  String? @db.Text
+  heroImageUrl String?
+
+  // Approximate centroid for map + PostGIS geo queries later.
+  lat Float?
+  lng Float?
+
+  parentAreaId String?
+  parentArea   Area?   @relation("AreaHierarchy", fields: [parentAreaId], references: [id])
+  subAreas     Area[]  @relation("AreaHierarchy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buildings     Building[]
+  projects      Project[]
+  properties    Property[]
+  marketMetrics MarketMetric[]
+
+  @@index([city])
+  @@map("areas")
+}
+
+model Building {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+
+  areaId      String
+  area        Area       @relation(fields: [areaId], references: [id])
+  developerId String?
+  developer   Developer? @relation(fields: [developerId], references: [id])
+
+  totalFloors Int?
+  yearBuilt   Int?
+  amenities   String[]
+
+  lat Float?
+  lng Float?
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@index([areaId])
+  @@map("buildings")
+}
+
+enum ProjectStatus {
+  ANNOUNCED
+  OFF_PLAN
+  UNDER_CONSTRUCTION
+  READY
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?       @db.Text
+  status      ProjectStatus @default(OFF_PLAN)
+
+  areaId      String
+  area        Area      @relation(fields: [areaId], references: [id])
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id])
+
+  launchDate       DateTime?
+  handoverDate     DateTime?
+  startingPriceAed Decimal?  @db.Decimal(14, 2)
+  paymentPlan      Json? // structured milestone plan, e.g. [{ "milestone": "On booking", "percent": 10 }]
+  amenities        String[]
+  heroImageUrl     String?
+  floorPlans       Json? // array of { name, unitType, bedrooms, areaSqft, imageUrl }
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  units Unit[]
+  leads Lead[]
+
+  @@index([areaId])
+  @@index([developerId])
+  @@map("projects")
+}
+
+// A sellable/rentable unit within an off-plan project (pre-handover inventory).
+enum UnitAvailability {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+model Unit {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  unitNumber   String?
+  unitType     String // e.g. "1BR", "2BR", "Studio"
+  bedrooms     Int
+  bathrooms    Int
+  areaSqft     Float
+  priceAed     Decimal          @db.Decimal(14, 2)
+  floor        Int?
+  availability UnitAvailability @default(AVAILABLE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("units")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Properties & Listings
+//
+// Property = the physical asset. Listing = a commercial offer against it
+// (for sale or for rent). Keep asking price / transaction price / rental
+// asking / rental transaction strictly separate — see docs/ARCHITECTURE.md §4.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  TOWNHOUSE
+  PENTHOUSE
+  DUPLEX
+  PLOT
+  OFFICE
+  RETAIL
+  WAREHOUSE
+  LABOR_CAMP
+  BUILDING
+  OTHER
+}
+
+enum CompletionStatus {
+  READY
+  OFF_PLAN
+}
+
+enum FurnishingStatus {
+  FURNISHED
+  UNFURNISHED
+  PARTLY_FURNISHED
+  NOT_APPLICABLE
+}
+
+model Property {
+  id   String       @id @default(cuid())
+  type PropertyType
+
+  addressLine String?
+  unitNumber  String?
+  areaId      String
+  area        Area      @relation(fields: [areaId], references: [id])
+  buildingId  String?
+  building    Building? @relation(fields: [buildingId], references: [id])
+
+  bedrooms   Int?
+  bathrooms  Int?
+  areaSqft   Float?
+  plotSqft   Float?
+  completion CompletionStatus @default(READY)
+  furnishing FurnishingStatus @default(NOT_APPLICABLE)
+
+  lat Float?
+  lng Float?
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings           Listing[]
+  transactions       Transaction[]
+  rentalTransactions RentalTransaction[]
+  valuations         Valuation[]
+  history            PropertyHistory[]
+  verification       Verification?
+  savedBy            SavedProperty[]
+
+  @@index([areaId])
+  @@index([buildingId])
+  @@index([type])
+  @@map("properties")
+}
+
+enum ListingType {
+  SALE
+  RENT
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  UNDER_OFFER
+  RENTED
+  SOLD
+  EXPIRED
+  WITHDRAWN
+}
+
+model Listing {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  type   ListingType
+  status ListingStatus @default(DRAFT)
+
+  title       String
+  description String? @db.Text
+
+  // Asking price fields — distinct from actual transaction data.
+  askingPriceAed    Decimal? @db.Decimal(14, 2) // for SALE listings
+  askingRentAedYear Decimal? @db.Decimal(14, 2) // for RENT listings, annual asking rent
+
+  agentId  String
+  agent    Agent   @relation(fields: [agentId], references: [id])
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  images    String[]
+  videoUrl  String?
+  amenities String[]
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads    Lead[]
+  viewings Viewing[]
+
+  @@index([propertyId])
+  @@index([agentId])
+  @@index([status])
+  @@index([type])
+  @@map("listings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Transactions (ground truth of what actually happened, vs. asking prices)
+// ─────────────────────────────────────────────────────────────────────────
+
+model Transaction {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  priceAed        Decimal  @db.Decimal(14, 2)
+  transactionDate DateTime
+  source          String // e.g. "DLD" (Dubai Land Department), "demo-seed"
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([transactionDate])
+  @@map("transactions")
+}
+
+model RentalTransaction {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  annualRentAed Decimal   @db.Decimal(14, 2)
+  contractStart DateTime
+  contractEnd   DateTime?
+  source        String // e.g. "Ejari", "demo-seed"
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([contractStart])
+  @@map("rental_transactions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PropAxis Intelligence: valuations, market metrics, property history,
+// verification/provenance — the backbone of the Property Passport.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Valuation {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  estimatedValueAed     Decimal  @db.Decimal(14, 2)
+  estimatedRangeLowAed  Decimal  @db.Decimal(14, 2)
+  estimatedRangeHighAed Decimal  @db.Decimal(14, 2)
+  pricePerSqftAed       Decimal? @db.Decimal(10, 2)
+  confidenceScore       Float // 0..1
+  methodology           String // e.g. "comparables-v1"
+  comparableListingIds  String[]
+
+  generatedAt DateTime @default(now())
+
+  isDemoData Boolean @default(false)
+
+  @@index([propertyId])
+  @@map("valuations")
+}
+
+model MarketMetric {
+  id     String @id @default(cuid())
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  propertyType PropertyType?
+  periodStart  DateTime
+  periodEnd    DateTime
+
+  avgPricePerSqftAed  Decimal? @db.Decimal(10, 2)
+  avgAskingPriceAed   Decimal? @db.Decimal(14, 2)
+  avgAnnualRentAed    Decimal? @db.Decimal(14, 2)
+  grossRentalYieldPct Decimal? @db.Decimal(5, 2)
+  transactionVolume   Int      @default(0)
+  priceChangePct      Decimal? @db.Decimal(6, 2) // vs. previous period
+
+  isDemoData Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([areaId, periodStart])
+  @@map("market_metrics")
+}
+
+enum PropertyHistoryEventType {
+  LISTED
+  PRICE_CHANGED
+  STATUS_CHANGED
+  SOLD
+  RENTED
+  DELISTED
+}
+
+model PropertyHistory {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  eventType  PropertyHistoryEventType
+  detail     Json? // free-form structured detail for the event (old/new price, etc.)
+  occurredAt DateTime                 @default(now())
+
+  @@index([propertyId, occurredAt])
+  @@map("property_history")
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum DataSource {
+  PROPAXIS_AGENT
+  AGENCY_FEED
+  DEVELOPER_FEED
+  GOVERNMENT_DATA
+  DEMO_SEED
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  status          VerificationStatus @default(UNVERIFIED)
+  source          DataSource
+  confidenceScore Float              @default(0) // 0..1
+  verifiedAt      DateTime?
+  verifiedBy      String? // admin/user id, if manually verified
+  notes           String?            @db.Text
+
+  @@map("verifications")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CRM: Leads, Viewings, Opportunities, Deals
+// (mirrors what eventually syncs into VRODUX — see vrodux-integration module)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VIEWING_SCHEDULED
+  NEGOTIATING
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE_ENQUIRY
+  AI_SEARCH
+  PHONE
+  WALK_IN
+  REFERRAL
+  OTHER
+}
+
+model Lead {
+  id String @id @default(cuid())
+
+  customerId String
+  customer   User   @relation("LeadCustomer", fields: [customerId], references: [id])
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  status  LeadStatus @default(NEW)
+  source  LeadSource @default(WEBSITE_ENQUIRY)
+  message String?    @db.Text
+
+  vroduxSyncedAt DateTime? // set once pushed to VRODUX CRM via vrodux-integration
+  vroduxRefId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  viewings    Viewing[]
+  opportunity Opportunity?
+
+  @@index([agentId, status])
+  @@index([customerId])
+  @@map("leads")
+}
+
+enum ViewingStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Viewing {
+  id String @id @default(cuid())
+
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id])
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  customerId String
+  customer   User   @relation("ViewingCustomer", fields: [customerId], references: [id])
+  agentId    String
+  agent      Agent  @relation("ViewingAgent", fields: [agentId], references: [id])
+
+  scheduledAt DateTime
+  status      ViewingStatus @default(REQUESTED)
+  notes       String?       @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agentId, scheduledAt])
+  @@map("viewings")
+}
+
+enum OpportunityStage {
+  QUALIFICATION
+  VIEWING
+  NEGOTIATION
+  OFFER
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+model Opportunity {
+  id     String @id @default(cuid())
+  leadId String @unique
+  lead   Lead   @relation(fields: [leadId], references: [id])
+
+  stage       OpportunityStage @default(QUALIFICATION)
+  estValueAed Decimal?         @db.Decimal(14, 2)
+
+  vroduxSyncedAt DateTime?
+  vroduxRefId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deal Deal?
+
+  @@map("opportunities")
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Deal {
+  id            String      @id @default(cuid())
+  opportunityId String      @unique
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
+
+  status        DealStatus @default(OPEN)
+  finalValueAed Decimal?   @db.Decimal(14, 2)
+  closedAt      DateTime?
+
+  vroduxSyncedAt DateTime?
+  vroduxRefId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("deals")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// User conveniences
+// ─────────────────────────────────────────────────────────────────────────
+
+model SavedProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@map("saved_properties")
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  criteria  Json // structured search filters
+  alertsOn  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("saved_searches")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AI
+// ─────────────────────────────────────────────────────────────────────────
+
+enum AIConversationContext {
+  MARKETPLACE_SEARCH
+  PROPERTY_ANALYSIS
+  AREA_ANALYSIS
+  INVESTMENT_ANALYSIS
+  AGENT_COPILOT
+}
+
+model AIConversation {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  context  AIConversationContext @default(MARKETPLACE_SEARCH)
+  messages Json // array of { role, content, toolCalls?, toolResults? }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Audit
+// ─────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  action     String // e.g. "listing.status_changed"
+  entityType String // e.g. "Listing"
+  entityId   String
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
