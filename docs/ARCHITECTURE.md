@@ -2,7 +2,8 @@
 
 > Real Estate Intelligence. Powered by AI.
 
-Status: **early build** — foundational scaffold (auth, schema, design system, homepage). This document
+Status: **core build complete** (phases 1–14, see §9) — marketplace, dashboards, AI tool-calling and the
+VRODUX integration boundary are all wired up and verified against a live Postgres database. This document
 is updated as each phase lands; it reflects what is actually implemented, not the aspirational end state.
 
 ## 1. Product shape
@@ -167,10 +168,17 @@ PropAxis Listing → Enquiry → PropAxis Lead → [vrodux-integration] → VROD
 | 5. Auth/RBAC | ✅ initial Auth.js + role model |
 | 6. Homepage | ✅ initial build |
 | 7. Property/listing models | ✅ (part of §3 schema) |
-| 8. Property search | ⏳ not started |
-| 9. Property detail page | ⏳ not started |
-| 10. Agent profiles | ⏳ not started |
-| 11. Basic dashboards | ⏳ not started |
-| 12. PropAxis AI | ⏳ not started |
-| 13. Data/market intelligence | ⏳ not started |
-| 14. VRODUX integration | ⏳ interface only |
+| 8. Property search | ✅ `/buy`, `/rent`, `/commercial`, filters + pagination |
+| 9. Property detail page | ✅ Property Passport (`/property/[id]`) |
+| 10. Agent profiles | ✅ `/agents`, `/agents/[slug]`, `/agencies`, `/developers` |
+| 11. Basic dashboards | ✅ user/agent/agency/developer/admin dashboards, listing + lead CRUD, verification queue |
+| 12. PropAxis AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `ANTHROPIC_API_KEY` to actually answer |
+| 13. Data/market intelligence | ✅ `/insights`, `/valuation`, `/investment-calculator` |
+| 14. VRODUX integration | ✅ interface + `MockVroduxProvider`, wired into lead creation — real HTTP client still pending |
+
+Everything above is verified against a live Postgres instance (Neon), including migration, seed, full
+`next build`, and manual browser testing of search → property detail → login → listing creation → lead
+capture → VRODUX mock sync. Remaining gaps: no real LLM key configured yet (AI degrades to a clear error
+message rather than fabricating), Redis/OpenSearch aren't wired up (search runs directly against
+Postgres, rate limiting is in-memory), and the real VRODUX HTTP client is still a TODO in
+`src/modules/vrodux-integration/client.ts`.
