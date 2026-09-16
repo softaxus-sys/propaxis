@@ -31,8 +31,9 @@ transaction price vs. rental asking vs. rental transaction, kept strictly separa
 | Search | OpenSearch/Elasticsearch (full-text + facets) |
 | Vector search | pgvector or dedicated vector store, for AI semantic retrieval |
 | Auth | Auth.js (NextAuth) v5, credentials + OAuth, JWT session, RBAC via `role` + `permissions` |
-| AI | LLM API with **function/tool calling only** — the model never fabricates property data, it calls
-  structured tools that query Postgres/OpenSearch and returns grounded results |
+| AI | Any OpenAI-compatible chat-completions endpoint (`AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`) —
+  defaults to Groq's free tier. **Function/tool calling only**: the model never fabricates property
+  data, it calls structured tools that query Postgres and returns grounded results. |
 | Object storage | S3-compatible bucket for listing media |
 | i18n | English + Arabic, full RTL support (`dir` attribute driven, logical CSS properties) |
 | Infra | Docker, CI/CD (GitHub Actions), environment-based config |
@@ -172,7 +173,7 @@ PropAxis Listing → Enquiry → PropAxis Lead → [vrodux-integration] → VROD
 | 9. Property detail page | ✅ Property Passport (`/property/[id]`) |
 | 10. Agent profiles | ✅ `/agents`, `/agents/[slug]`, `/agencies`, `/developers` |
 | 11. Basic dashboards | ✅ user/agent/agency/developer/admin dashboards, listing + lead CRUD, verification queue |
-| 12. PropAxis AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `ANTHROPIC_API_KEY` to actually answer |
+| 12. PropAxis AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `AI_API_KEY` to actually answer |
 | 13. Data/market intelligence | ✅ `/insights`, `/valuation`, `/investment-calculator` |
 | 14. VRODUX integration | ✅ interface + `MockVroduxProvider`, wired into lead creation — real HTTP client still pending |
 

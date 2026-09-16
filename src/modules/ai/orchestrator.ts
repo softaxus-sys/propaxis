@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 import { AI_TOOLS, getToolByName } from "./tools";
 
 const SYSTEM_PROMPT = `You are PropAxis AI, the real estate intelligence assistant for PropAxis.ae — a UAE property marketplace.
@@ -22,81 +23,96 @@ export type AiChatResult = {
 
 const MAX_TOOL_ROUNDS = 4;
 
-export async function runAiChat(messages: ChatMessage[]): Promise<AiChatResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+/**
+ * PropAxis AI talks to any OpenAI-compatible chat-completions endpoint — Groq by
+ * default (generous free tier, fast, solid tool-calling support), but swapping to
+ * OpenRouter or any other provider is just an env var change, not a code change.
+ * See docs/ARCHITECTURE.md §5.
+ */
+function getClient() {
+  const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "PropAxis AI isn't configured yet — ANTHROPIC_API_KEY is missing from the server environment.",
+      "PropAxis AI isn't configured yet — AI_API_KEY is missing from the server environment.",
     );
   }
 
-  const client = new Anthropic({ apiKey });
+  return new OpenAI({
+    apiKey,
+    baseURL: process.env.AI_BASE_URL || "https://api.groq.com/openai/v1",
+  });
+}
 
-  const anthropicTools = AI_TOOLS.map((tool) => ({
-    name: tool.name,
-    description: tool.description,
-    input_schema: tool.jsonSchema as Anthropic.Tool["input_schema"],
+const MODEL = process.env.AI_MODEL || "llama-3.3-70b-versatile";
+
+export async function runAiChat(messages: ChatMessage[]): Promise<AiChatResult> {
+  const client = getClient();
+
+  const tools: ChatCompletionTool[] = AI_TOOLS.map((tool) => ({
+    type: "function",
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.jsonSchema,
+    },
   }));
 
-  const conversation: Anthropic.MessageParam[] = messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
+  const conversation: ChatCompletionMessageParam[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...messages.map((m): ChatCompletionMessageParam => ({ role: m.role, content: m.content })),
+  ];
 
   const toolCalls: AiToolCallLog[] = [];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const response = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      tools: anthropicTools,
+    const response = await client.chat.completions.create({
+      model: MODEL,
       messages: conversation,
+      tools,
     });
 
-    const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text");
-    const toolUseBlocks = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+    const choice = response.choices[0];
+    const message = choice.message;
 
-    if (response.stop_reason !== "tool_use" || toolUseBlocks.length === 0) {
-      return { reply: textBlocks.map((b) => b.text).join("\n").trim(), toolCalls };
+    if (!message.tool_calls || message.tool_calls.length === 0) {
+      return { reply: message.content?.trim() ?? "", toolCalls };
     }
 
-    conversation.push({ role: "assistant", content: response.content });
+    conversation.push({
+      role: "assistant",
+      content: message.content,
+      tool_calls: message.tool_calls,
+    });
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = [];
-    for (const block of toolUseBlocks) {
-      const tool = getToolByName(block.name);
-      toolCalls.push({ name: block.name, input: block.input });
+    for (const call of message.tool_calls) {
+      if (call.type !== "function") continue;
+
+      const tool = getToolByName(call.function.name);
+      let parsedInput: unknown;
+      try {
+        parsedInput = JSON.parse(call.function.arguments || "{}");
+      } catch {
+        parsedInput = {};
+      }
+      toolCalls.push({ name: call.function.name, input: parsedInput });
 
       if (!tool) {
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: `Unknown tool: ${block.name}`,
-          is_error: true,
-        });
+        conversation.push({ role: "tool", tool_call_id: call.id, content: `Unknown tool: ${call.function.name}` });
         continue;
       }
 
       try {
-        const parsed = tool.inputSchema.parse(block.input);
-        const result = await tool.execute(parsed as never);
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: JSON.stringify(result),
-        });
+        const validated = tool.inputSchema.parse(parsedInput);
+        const result = await tool.execute(validated as never);
+        conversation.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
       } catch (err) {
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
+        conversation.push({
+          role: "tool",
+          tool_call_id: call.id,
           content: `Tool error: ${err instanceof Error ? err.message : "unknown error"}`,
-          is_error: true,
         });
       }
     }
-
-    conversation.push({ role: "user", content: toolResults });
   }
 
   return {
