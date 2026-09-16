@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { NewListingForm } from "@/components/dashboard/new-listing-form";
 import { requireRole } from "@/modules/auth/rbac";
+import { AGENT_NAV } from "@/components/dashboard/agent-nav";
 
 export default async function NewListingPage() {
   const session = await auth();
@@ -19,10 +20,7 @@ export default async function NewListingPage() {
     <DashboardShell
       userName={session.user.name ?? ""}
       roleLabel="Agent"
-      nav={[
-        { href: "/agent/dashboard", label: "Listings" },
-        { href: "/agent/dashboard/leads", label: "Leads" },
-      ]}
+      nav={AGENT_NAV}
     >
       <h1 className="text-2xl font-semibold text-ink-950">New listing</h1>
       <div className="mt-6 max-w-xl">

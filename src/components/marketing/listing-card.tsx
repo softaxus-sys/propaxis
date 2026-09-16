@@ -32,10 +32,10 @@ export function ListingCard({ listing }: { listing: ListingCardData }) {
     <Link href={`/property/${listing.id}`} className="group block">
       <Card className="overflow-hidden transition-shadow group-hover:shadow-md">
         <div className="relative flex h-44 items-end bg-gradient-to-br from-ink-800 to-ink-950 p-4">
-          <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute left-4 top-4">
+          <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute start-4 top-4">
             {listing.type === "SALE" ? "For Sale" : "For Rent"}
           </Badge>
-          {listing.isDemoData && <DemoDataBadge className="absolute right-4 top-4 bg-white/90" />}
+          {listing.isDemoData && <DemoDataBadge className="absolute end-4 top-4 bg-white/90" />}
           <span className="text-lg font-semibold text-white">{price}</span>
         </div>
 

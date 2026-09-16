@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 const AUDIENCES = [
   {
@@ -21,20 +22,17 @@ const AUDIENCES = [
   },
 ];
 
-export function ProfessionalTeaser() {
+export function ProfessionalTeaser({ dict }: { dict: Dictionary }) {
   return (
     <section className="bg-sand-50 py-16">
       <Container>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-ink-950">Built for the professional ecosystem</h2>
-            <p className="mt-1 max-w-lg text-sm text-sand-600">
-              PropAxis connects agents, agencies and developers — and business activity can flow straight
-              into VRODUX, the group&apos;s CRM/ERP.
-            </p>
+            <h2 className="text-2xl font-semibold text-ink-950">{dict.home.professionalTitle}</h2>
+            <p className="mt-1 max-w-lg text-sm text-sand-600">{dict.home.professionalSubtitle}</p>
           </div>
           <Link href="/vrodux" className="text-sm font-semibold text-ink-950 hover:text-bronze-500">
-            Run your business with VRODUX →
+            {dict.home.vroduxLink} →
           </Link>
         </div>
 

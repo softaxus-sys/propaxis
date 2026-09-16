@@ -4,16 +4,17 @@ import { Card } from "@/components/ui/card";
 import { DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { listAreas } from "@/modules/areas/queries";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
-export async function AreasGrid() {
+export async function AreasGrid({ dict }: { dict: Dictionary }) {
   const areas = await listAreas();
   if (areas.length === 0) return null;
 
   return (
     <section className="bg-sand-50 py-16">
       <Container>
-        <h2 className="text-2xl font-semibold text-ink-950">Explore popular areas</h2>
-        <p className="mt-1 text-sm text-sand-600">Price trends and inventory across Dubai&apos;s top communities.</p>
+        <h2 className="text-2xl font-semibold text-ink-950">{dict.home.areasTitle}</h2>
+        <p className="mt-1 text-sm text-sand-600">{dict.home.areasSubtitle}</p>
 
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {areas.slice(0, 6).map((area) => (

@@ -7,11 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/modules/auth/rbac";
 import { disconnectVrodux } from "@/modules/agencies/vrodux-actions";
-
-const NAV = [
-  { href: "/agency/dashboard", label: "Overview" },
-  { href: "/agency/dashboard/vrodux", label: "VRODUX" },
-];
+import { AGENCY_NAV as NAV } from "@/components/dashboard/agency-nav";
 
 export default async function AgencyVroduxPage() {
   const session = await auth();

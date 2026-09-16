@@ -7,8 +7,11 @@ import { AiTeaser } from "@/components/marketing/ai-teaser";
 import { IntelligenceTeaser } from "@/components/marketing/intelligence-teaser";
 import { ProfessionalTeaser } from "@/components/marketing/professional-teaser";
 import { Container } from "@/components/ui/container";
+import { getDictionary } from "@/lib/i18n/server";
 
-export default function Home() {
+export default async function Home() {
+  const dict = await getDictionary();
+
   return (
     <>
       <SiteHeader />
@@ -23,27 +26,24 @@ export default function Home() {
           />
           <Container className="relative">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-bronze-300">
-              Real Estate Intelligence. Powered by AI.
+              {dict.home.tagline}
             </p>
             <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight sm:text-5xl">
-              Discover, understand and compare property across the UAE.
+              {dict.home.headline}
             </h1>
-            <p className="mt-5 max-w-xl text-sand-200">
-              PropAxis brings together listings, transaction history, rental data and an AI assistant
-              that searches real structured data — never fabricated.
-            </p>
+            <p className="mt-5 max-w-xl text-sand-200">{dict.home.subheadline}</p>
 
             <div className="mt-10 max-w-2xl">
-              <HeroSearch />
+              <HeroSearch dict={dict} />
             </div>
           </Container>
         </section>
 
-        <FeaturedListings />
-        <AreasGrid />
-        <IntelligenceTeaser />
-        <AiTeaser />
-        <ProfessionalTeaser />
+        <FeaturedListings dict={dict} />
+        <AreasGrid dict={dict} />
+        <IntelligenceTeaser dict={dict} />
+        <AiTeaser dict={dict} />
+        <ProfessionalTeaser dict={dict} />
       </main>
       <SiteFooter />
     </>

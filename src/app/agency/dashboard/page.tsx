@@ -5,11 +5,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { requireRole } from "@/modules/auth/rbac";
-
-const NAV = [
-  { href: "/agency/dashboard", label: "Overview" },
-  { href: "/agency/dashboard/vrodux", label: "VRODUX" },
-];
+import { AGENCY_NAV as NAV } from "@/components/dashboard/agency-nav";
 
 export default async function AgencyDashboardPage() {
   const session = await auth();

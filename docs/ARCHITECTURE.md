@@ -189,7 +189,17 @@ for if/when VRODUX exposes a bidirectional API.
 
 Everything above is verified against a live Postgres instance (Neon), including migration, seed, full
 `next build`, and manual browser testing of search → property detail → login → listing creation → lead
-capture → VRODUX mock sync. Remaining gaps: no real LLM key configured yet (AI degrades to a clear error
-message rather than fabricating), Redis/OpenSearch aren't wired up (search runs directly against
-Postgres, rate limiting is in-memory), and the real VRODUX HTTP client is still a TODO in
-`src/modules/vrodux-integration/client.ts`.
+capture → VRODUX webhook push. PropAxis AI runs on Groq's free tier by default (any OpenAI-compatible
+endpoint works via `AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`) — degrades to a clear error if no key is set,
+never fabricates. Self-serve agent/agency registration is live with an admin verification queue (agents
+can't publish until approved). An Opportunity/Deal pipeline UI sits on top of the Lead CRM — Kanban board
+at `/agent/dashboard/pipeline` and `/agency/dashboard/pipeline`, `src/modules/opportunities` and
+`src/modules/deals`. i18n/RTL infrastructure is live (`src/lib/i18n`) — cookie-based locale switch, full
+RTL layout mirroring via the `dir` attribute, English/Arabic dictionaries covering nav, footer, homepage
+and auth; not yet extended to dashboards or every marketing page's body copy.
+
+Remaining gaps: Redis/OpenSearch aren't wired up (search runs directly against Postgres, rate limiting is
+in-memory); the real VRODUX HTTP client only covers lead intake (`WebhookVroduxProvider`) — no
+Opportunity/Deal sync back from VRODUX, since its webhook is one-directional; i18n coverage is partial
+(dashboards and secondary marketing pages are English-only); no listing photo uploads or map/geo search;
+no automated tests/CI.

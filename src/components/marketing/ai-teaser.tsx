@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 const EXAMPLE_PROMPTS = [
   "Find me a 2-bedroom apartment in Dubai Marina under AED 2.5M",
@@ -10,7 +11,7 @@ const EXAMPLE_PROMPTS = [
   "Is this property reasonably priced?",
 ];
 
-export function AiTeaser() {
+export function AiTeaser({ dict }: { dict: Dictionary }) {
   return (
     <section className="py-16">
       <Container>
@@ -20,16 +21,11 @@ export function AiTeaser() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-bronze-300">
                 <Sparkles className="h-3.5 w-3.5" /> PropAxis AI
               </span>
-              <h2 className="mt-4 text-3xl font-semibold leading-tight">
-                Ask PropAxis anything about the market.
-              </h2>
-              <p className="mt-4 max-w-md text-sand-200">
-                PropAxis AI searches and analyzes real listings, transactions and market data through
-                structured tools — it never invents property information.
-              </p>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight">{dict.home.aiTitle}</h2>
+              <p className="mt-4 max-w-md text-sand-200">{dict.home.aiSubtitle}</p>
               <Link href="/ai-search">
                 <Button variant="accent" size="lg" className="mt-6">
-                  Try PropAxis AI
+                  {dict.home.aiButton}
                 </Button>
               </Link>
             </div>

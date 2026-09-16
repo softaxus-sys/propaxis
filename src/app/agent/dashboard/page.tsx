@@ -8,11 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatAed } from "@/lib/utils";
 import { requireRole } from "@/modules/auth/rbac";
-
-const NAV = [
-  { href: "/agent/dashboard", label: "Listings" },
-  { href: "/agent/dashboard/leads", label: "Leads" },
-];
+import { AGENT_NAV as NAV } from "@/components/dashboard/agent-nav";
 
 export default async function AgentDashboardPage() {
   const session = await auth();

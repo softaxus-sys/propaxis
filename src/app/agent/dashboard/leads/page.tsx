@@ -5,11 +5,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { LeadStatusSelect } from "@/components/dashboard/lead-status-select";
 import { requireRole } from "@/modules/auth/rbac";
-
-const NAV = [
-  { href: "/agent/dashboard", label: "Listings" },
-  { href: "/agent/dashboard/leads", label: "Leads" },
-];
+import { AGENT_NAV as NAV } from "@/components/dashboard/agent-nav";
 
 export default async function AgentLeadsPage() {
   const session = await auth();

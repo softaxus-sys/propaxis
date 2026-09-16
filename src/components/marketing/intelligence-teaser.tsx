@@ -1,5 +1,6 @@
 import { FileSearch, TrendingUp, ShieldCheck, BarChart3 } from "lucide-react";
 import { Container } from "@/components/ui/container";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 const FEATURES = [
   {
@@ -24,16 +25,13 @@ const FEATURES = [
   },
 ];
 
-export function IntelligenceTeaser() {
+export function IntelligenceTeaser({ dict }: { dict: Dictionary }) {
   return (
     <section className="py-16">
       <Container>
         <div className="max-w-2xl">
-          <h2 className="text-2xl font-semibold text-ink-950">PropAxis Intelligence</h2>
-          <p className="mt-2 text-sm text-sand-600">
-            Every property, building and area eventually carries an intelligence layer — grounded in
-            structured data, not guesswork.
-          </p>
+          <h2 className="text-2xl font-semibold text-ink-950">{dict.home.intelligenceTitle}</h2>
+          <p className="mt-2 text-sm text-sand-600">{dict.home.intelligenceSubtitle}</p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">

@@ -5,28 +5,31 @@ import { cn } from "@/lib/utils";
 import { BuyerRegisterForm } from "./buyer-form";
 import { AgentRegisterForm } from "./agent-form";
 import { AgencyRegisterForm } from "./agency-form";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 type Tab = "buyer" | "agent" | "agency";
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: "buyer", label: "Buyer / Tenant" },
-  { key: "agent", label: "Agent" },
-  { key: "agency", label: "Agency" },
-];
 
 export function RegisterTabs({
   initialTab,
   agencies,
+  dict,
 }: {
   initialTab: Tab;
   agencies: { id: string; name: string }[];
+  dict: Dictionary;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "buyer", label: dict.auth.tabBuyer },
+    { key: "agent", label: dict.auth.tabAgent },
+    { key: "agency", label: dict.auth.tabAgency },
+  ];
 
   return (
     <div>
       <div className="flex gap-1 rounded-full border border-sand-200 bg-sand-50 p-1">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             type="button"

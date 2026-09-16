@@ -5,21 +5,23 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
-const TABS = [
-  { key: "buy", label: "Buy", href: "/buy" },
-  { key: "rent", label: "Rent", href: "/rent" },
-  { key: "new-projects", label: "New Projects", href: "/new-projects" },
-] as const;
-
-export function HeroSearch() {
+export function HeroSearch({ dict }: { dict: Dictionary }) {
   const router = useRouter();
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("buy");
+
+  const tabs = [
+    { key: "buy", label: dict.home.tabBuy, href: "/buy" },
+    { key: "rent", label: dict.home.tabRent, href: "/rent" },
+    { key: "new-projects", label: dict.home.tabNewProjects, href: "/new-projects" },
+  ] as const;
+
+  const [tab, setTab] = useState<(typeof tabs)[number]["key"]>("buy");
   const [location, setLocation] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const activeTab = TABS.find((t) => t.key === tab)!;
+    const activeTab = tabs.find((t) => t.key === tab)!;
     const params = new URLSearchParams();
     if (location.trim()) params.set("location", location.trim());
     router.push(`${activeTab.href}${params.size ? `?${params.toString()}` : ""}`);
@@ -28,7 +30,7 @@ export function HeroSearch() {
   return (
     <div className="w-full rounded-2xl border border-sand-200 bg-white/95 p-2 shadow-xl shadow-ink-950/5 backdrop-blur">
       <div className="flex gap-1 px-2 pt-2">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -47,11 +49,11 @@ export function HeroSearch() {
         <Input
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          placeholder="Search by area, building or project — e.g. Dubai Marina"
+          placeholder={dict.home.searchPlaceholder}
           className="h-12 flex-1"
         />
         <Button type="submit" size="lg" className="sm:w-auto">
-          Search
+          {dict.home.searchButton}
         </Button>
       </form>
     </div>
