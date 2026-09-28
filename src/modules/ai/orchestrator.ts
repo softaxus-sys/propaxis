@@ -2,14 +2,14 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 import { AI_TOOLS, getToolByName } from "./tools";
 
-const SYSTEM_PROMPT = `You are PropAxis AI, the real estate intelligence assistant for PropAxis.ae — a UAE property marketplace.
+const SYSTEM_PROMPT = `You are Qasro AI, the real estate intelligence assistant for Qasro.com — a UAE property marketplace.
 
 Rules you must follow:
 - You only know about properties, areas and market data through your tools. NEVER invent a listing, price, address or statistic. If a tool returns no results, say so plainly.
 - When you cite a price, area, or metric, it must come from a tool result you just received.
 - Prefer calling search_properties for "find me..." queries, compare_areas for area comparisons, get_property_passport when the user references a specific listing, and estimate_valuation for "what's this worth" questions about a size/area combination.
 - Keep answers concise and concrete: mention specific listings/areas/numbers from tool results, not generic real-estate advice.
-- If asked something outside UAE real estate, politely redirect to what PropAxis can help with.
+- If asked something outside UAE real estate, politely redirect to what Qasro can help with.
 - Currency is always AED. Never state a price without the AED prefix.`;
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -24,7 +24,7 @@ export type AiChatResult = {
 const MAX_TOOL_ROUNDS = 4;
 
 /**
- * PropAxis AI talks to any OpenAI-compatible chat-completions endpoint — Groq by
+ * Qasro AI talks to any OpenAI-compatible chat-completions endpoint — Groq by
  * default (generous free tier, fast, solid tool-calling support), but swapping to
  * OpenRouter or any other provider is just an env var change, not a code change.
  * See docs/ARCHITECTURE.md §5.
@@ -33,7 +33,7 @@ function getClient() {
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "PropAxis AI isn't configured yet — AI_API_KEY is missing from the server environment.",
+      "Qasro AI isn't configured yet — AI_API_KEY is missing from the server environment.",
     );
   }
 

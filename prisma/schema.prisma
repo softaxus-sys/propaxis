@@ -1,4 +1,4 @@
-// PropAxis.ae — core data model
+// Qasro.com — core data model
 // Source of truth for the platform's domain model. See docs/ARCHITECTURE.md §4 for the
 // design rules behind this file (asking vs. transaction price separation, verification,
 // demo-data flagging, etc).
@@ -124,11 +124,11 @@ model Agency {
   isVerified Boolean @default(false)
   isDemoData Boolean @default(false)
 
-  // VRODUX is multi-tenant: each PropAxis Agency that wants VRODUX signs up for its
+  // VRODUX is multi-tenant: each Qasro Agency that wants VRODUX signs up for its
   // OWN VRODUX tenant and connects it here via VRODUX's per-tenant lead-intake webhook
   // (the same mechanism VRODUX already exposes for Property Finder/Bayut/web forms) —
   // this is unrelated to whichever tenant Softaxus itself uses internally. No webhook
-  // configured means leads simply stay in PropAxis only. See docs/ARCHITECTURE.md §7
+  // configured means leads simply stay in Qasro only. See docs/ARCHITECTURE.md §7
   // and vrodux-integration/provider.ts.
   vroduxWebhookUrl  String?
   vroduxConnectedAt DateTime?
@@ -511,7 +511,7 @@ model RentalTransaction {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// PropAxis Intelligence: valuations, market metrics, property history,
+// Qasro Intelligence: valuations, market metrics, property history,
 // verification/provenance — the backbone of the Property Passport.
 // ─────────────────────────────────────────────────────────────────────────
 

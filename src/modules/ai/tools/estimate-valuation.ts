@@ -36,7 +36,7 @@ export const estimateValuationTool: AiTool<z.infer<typeof inputSchema>> = {
     const area = await db.area.findFirst({
       where: areaSlug ? { slug: areaSlug } : { name: { contains: areaName ?? "", mode: "insensitive" } },
     });
-    if (!area) return { found: false, reason: "Area not found in PropAxis data." };
+    if (!area) return { found: false, reason: "Area not found in Qasro data." };
 
     const metric = propertyType
       ? await db.marketMetric.findFirst({ where: { areaId: area.id, propertyType }, orderBy: { periodEnd: "desc" } })

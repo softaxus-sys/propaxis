@@ -7,7 +7,7 @@ const inputSchema = listingSearchSchema.partial({ listingType: true, page: true 
 export const searchPropertiesTool: AiTool<z.infer<typeof inputSchema>> = {
   name: "search_properties",
   description:
-    "Search PropAxis's real listing database for properties matching filters. Use this whenever the " +
+    "Search Qasro's real listing database for properties matching filters. Use this whenever the " +
     "user asks to find, browse or filter properties (e.g. '2 bedroom apartment in Dubai Marina under " +
     "AED 2.5M'). Returns up to 12 real listings with price, specs and area — never invent listings.",
   jsonSchema: {

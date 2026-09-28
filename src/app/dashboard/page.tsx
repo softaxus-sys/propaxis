@@ -97,7 +97,7 @@ export default async function DashboardPage() {
       <div className="mt-8 rounded-2xl border border-dashed border-sand-300 bg-white p-6 text-center">
         <p className="text-sm text-sand-600">Want to list a property or work with clients?</p>
         <Link href="/for-professionals" className="mt-3 inline-block">
-          <Button variant="outline" size="sm">Learn about PropAxis for professionals</Button>
+          <Button variant="outline" size="sm">Learn about Qasro for professionals</Button>
         </Link>
       </div>
     </DashboardShell>

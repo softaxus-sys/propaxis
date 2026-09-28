@@ -29,7 +29,7 @@ export default async function AgencyVroduxPage() {
     <DashboardShell userName={session.user.name ?? ""} roleLabel="Agency Admin" nav={NAV}>
       <h1 className="text-2xl font-semibold text-ink-950">VRODUX integration</h1>
       <p className="mt-1 max-w-xl text-sm text-sand-600">
-        Each agency on PropAxis connects its own VRODUX tenant independently — this has no connection to
+        Each agency on Qasro connects its own VRODUX tenant independently — this has no connection to
         any other business&apos;s VRODUX account.
       </p>
 

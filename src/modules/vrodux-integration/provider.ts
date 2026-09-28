@@ -1,5 +1,5 @@
 /**
- * PropAxis and VRODUX are separate systems with separate databases — this module is
+ * Qasro and VRODUX are separate systems with separate databases — this module is
  * the only boundary between them. Nothing outside `vrodux-integration` should ever
  * import a VRODUX client directly. See docs/ARCHITECTURE.md §7.
  */
@@ -11,23 +11,23 @@ export type VroduxContactInput = {
 };
 
 export type VroduxLeadInput = {
-  externalLeadId: string; // PropAxis Lead.id
+  externalLeadId: string; // Qasro Lead.id
   contact: VroduxContactInput;
-  source: string; // e.g. "PropAxis Listing Enquiry"
+  source: string; // e.g. "Qasro Listing Enquiry"
   subject: string; // listing title / project name
   message?: string;
   agentEmail?: string;
 };
 
 export type VroduxOpportunityInput = {
-  externalOpportunityId: string; // PropAxis Opportunity.id
+  externalOpportunityId: string; // Qasro Opportunity.id
   vroduxLeadRefId: string;
   stage: string;
   estValueAed?: number;
 };
 
 export type VroduxDealInput = {
-  externalDealId: string; // PropAxis Deal.id
+  externalDealId: string; // Qasro Deal.id
   vroduxOpportunityRefId: string;
   status: string;
   finalValueAed?: number;
@@ -38,7 +38,7 @@ export type VroduxDealInput = {
 export type VroduxRef = { vroduxRefId: string };
 
 /**
- * Everything PropAxis needs from VRODUX. `pushLead` is implemented today via VRODUX's
+ * Everything Qasro needs from VRODUX. `pushLead` is implemented today via VRODUX's
  * per-tenant lead-intake webhook (the same mechanism it already exposes for Property
  * Finder/Bayut/web forms — see WebhookVroduxProvider). `pushOpportunity`/`pushDeal`
  * are kept for a future bidirectional integration once VRODUX exposes an API for them;

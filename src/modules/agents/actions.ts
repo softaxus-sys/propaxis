@@ -22,7 +22,7 @@ export type RegisterAgentState = { error?: string; success?: boolean };
  * without picking one. New accounts land unverified; an admin approves them from the
  * verification queue before they can publish listings (see listings/actions.ts and
  * docs/ARCHITECTURE.md §8/§14 discussion). This is a lightweight stand-in for the real
- * RERA/DLD broker-card check those platforms perform — PropAxis has no such
+ * RERA/DLD broker-card check those platforms perform — Qasro has no such
  * integration, so verification here is a manual admin review, not a regulatory one.
  */
 export async function registerAgent(_prev: RegisterAgentState, formData: FormData): Promise<RegisterAgentState> {

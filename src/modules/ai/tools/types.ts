@@ -1,7 +1,7 @@
 import type { ZodType } from "zod";
 
 /**
- * A PropAxis AI tool. Each tool wraps a module's existing query/service layer —
+ * A Qasro AI tool. Each tool wraps a module's existing query/service layer —
  * the same code paths the marketing UI uses — so the model can only ever return
  * data that's really in the database, never invent it. See docs/ARCHITECTURE.md §5.
  */

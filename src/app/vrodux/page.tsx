@@ -8,16 +8,16 @@ import { Card } from "@/components/ui/card";
 export const metadata: Metadata = { title: "VRODUX for business" };
 
 const PRODUCTS = [
-  { name: "VRODUX CRM", description: "Leads, viewings, opportunities and deals — synced straight from your PropAxis listings." },
+  { name: "VRODUX CRM", description: "Leads, viewings, opportunities and deals — synced straight from your Qasro listings." },
   { name: "VRODUX Professional", description: "For individual agents managing their own pipeline and clients." },
   { name: "VRODUX ERP", description: "Full back-office: finance, contracts and operations for growing agencies." },
   { name: "VRODUX Enterprise", description: "Multi-branch agencies and developers running at scale." },
 ];
 
 const FLOW = [
-  "PropAxis listing",
+  "Qasro listing",
   "Customer enquiry",
-  "PropAxis lead",
+  "Qasro lead",
   "VRODUX CRM",
   "Follow-up / viewing",
   "Opportunity",
@@ -34,7 +34,7 @@ export default function VroduxPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-bronze-300">VRODUX</span>
             <h1 className="mt-3 max-w-xl text-3xl font-semibold">Run your real estate business with VRODUX</h1>
             <p className="mt-4 max-w-xl text-sand-200">
-              PropAxis is the marketplace and intelligence layer. VRODUX is the business operating
+              Qasro is the marketplace and intelligence layer. VRODUX is the business operating
               system underneath it — every enquiry your listings generate can flow straight into your
               CRM pipeline.
             </p>

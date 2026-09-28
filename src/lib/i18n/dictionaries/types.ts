@@ -22,12 +22,12 @@ export type Dictionary = {
     findAgent: string;
     agencies: string;
     developers: string;
-    listWithPropaxis: string;
+    listWithQasro: string;
     intelligenceTitle: string;
     marketInsights: string;
     propertyValuation: string;
     investmentCalculator: string;
-    propaxisAi: string;
+    qasroAi: string;
     companyTitle: string;
     about: string;
     vroduxForBusiness: string;

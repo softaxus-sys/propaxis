@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 
 /**
- * Assembles the "Property Passport" — everything PropAxis knows about a listing's
+ * Assembles the "Property Passport" — everything Qasro knows about a listing's
  * underlying property: the active listing, comparable listings in the same area,
  * transaction/rental history, and the latest area market metric. This is the single
  * read path both the property detail page and the AI `getPropertyPassport` tool use,

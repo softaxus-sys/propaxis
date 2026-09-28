@@ -16,7 +16,7 @@ export function AgentRegisterForm({ agencies }: { agencies: { id: string; name: 
       <div>
         <h2 className="text-lg font-semibold text-ink-950">Application submitted</h2>
         <p className="mt-2 text-sm text-sand-600">
-          Your agent profile is pending verification by a PropAxis admin. Once approved, you can{" "}
+          Your agent profile is pending verification by a Qasro admin. Once approved, you can{" "}
           <Link href="/login" className="font-medium text-ink-950 underline underline-offset-4">
             sign in
           </Link>{" "}
@@ -30,7 +30,7 @@ export function AgentRegisterForm({ agencies }: { agencies: { id: string; name: 
     return (
       <div>
         <p className="text-sm text-sand-600">
-          There are no agencies registered on PropAxis yet — every agent must be affiliated with one, the
+          There are no agencies registered on Qasro yet — every agent must be affiliated with one, the
           same way Property Finder and Bayut require it.
         </p>
         <p className="mt-2 text-sm text-sand-600">
@@ -48,7 +48,7 @@ export function AgentRegisterForm({ agencies }: { agencies: { id: string; name: 
     <>
       <p className="text-sm text-sand-600">
         List properties, manage leads and clients. You&apos;ll need your RERA broker card number and an
-        existing PropAxis agency to join.
+        existing Qasro agency to join.
       </p>
       {state.error && <p className="mt-4 rounded-lg bg-[#fbeceb] px-3 py-2 text-sm text-danger">{state.error}</p>}
       <form action={formAction} className="mt-6 space-y-4">

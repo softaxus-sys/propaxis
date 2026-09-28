@@ -1,6 +1,6 @@
-# PropAxis.ae — Architecture
+# Qasro.com — Architecture
 
-> Real Estate Intelligence. Powered by AI.
+> The Home Of Palaces
 
 Status: **core build complete** (phases 1–14, see §9) — marketplace, dashboards, AI tool-calling and the
 VRODUX integration boundary are all wired up and verified against a live Postgres database. This document
@@ -8,7 +8,7 @@ is updated as each phase lands; it reflects what is actually implemented, not th
 
 ## 1. Product shape
 
-PropAxis is two things wearing one skin:
+Qasro is two things wearing one skin:
 
 1. **Marketplace** — buyers/tenants/investors search and understand properties (Buy, Rent, New Projects,
    Commercial, Areas, Buildings, Projects, Agents, Agencies, Developers).
@@ -16,7 +16,7 @@ PropAxis is two things wearing one skin:
    by an AI copilot, with business activity flowing into **VRODUX** (the group's ERP/CRM) through an
    integration boundary, never a shared database.
 
-The unifying layer across both is **PropAxis Intelligence**: a structured data model (asking price vs.
+The unifying layer across both is **Qasro Intelligence**: a structured data model (asking price vs.
 transaction price vs. rental asking vs. rental transaction, kept strictly separate) that powers the
 **Property Passport**, comparables, valuation ranges, and the AI assistant's tool-calling surface.
 
@@ -104,7 +104,7 @@ intent, not the field list, so it doesn't rot.
 
 ## 5. AI architecture
 
-PropAxis AI does not free-generate property facts. It's a tool-calling loop:
+Qasro AI does not free-generate property facts. It's a tool-calling loop:
 
 ```
 User NL query
@@ -134,27 +134,27 @@ reports) is a separate tool namespace scoped to the authenticated agent/agency's
 
 ## 7. VRODUX integration
 
-PropAxis and VRODUX are **separate systems, separate databases**. VRODUX is itself multi-tenant, and the
+Qasro and VRODUX are **separate systems, separate databases**. VRODUX is itself multi-tenant, and the
 connection is **per-agency, not global**: Softaxus's own internal VRODUX usage (tenant "Softaxus
-Technologies") is unrelated to this entirely. Any PropAxis `Agency` that wants VRODUX signs up for its
+Technologies") is unrelated to this entirely. Any Qasro `Agency` that wants VRODUX signs up for its
 own VRODUX tenant and connects it independently, from its own agency dashboard.
 
 The actual mechanism is VRODUX's existing per-tenant **lead-intake webhook** — the same one VRODUX
 already exposes for Property Finder, Bayut and plain web forms. An agency admin pastes that webhook URL
-into `/agency/dashboard/vrodux` (stored as `Agency.vroduxWebhookUrl`); PropAxis then POSTs every new lead
+into `/agency/dashboard/vrodux` (stored as `Agency.vroduxWebhookUrl`); Qasro then POSTs every new lead
 for that agency's listings straight to it. No API key/OAuth needed — it's the same integration shape a
 form builder would use. `src/modules/vrodux-integration/` is the only module allowed to know this:
 `VroduxProvider` is the interface, `WebhookVroduxProvider` is the real (already-working) implementation,
-and `NoOpVroduxProvider` is what an unconnected agency gets (leads simply stay in PropAxis only).
+and `NoOpVroduxProvider` is what an unconnected agency gets (leads simply stay in Qasro only).
 
 ```
 Agency connects its VRODUX webhook URL (per agency, one-time, in its own dashboard)
                             ↓
-PropAxis Listing → Enquiry → PropAxis Lead → POST to that agency's VRODUX webhook
+Qasro Listing → Enquiry → Qasro Lead → POST to that agency's VRODUX webhook
 ```
 
 Webhooks are intake-only — there's no equivalent mechanism yet for syncing Opportunity/Deal stage
-changes back into PropAxis, so `pushOpportunity`/`pushDeal` on `VroduxProvider` are no-ops today, kept
+changes back into Qasro, so `pushOpportunity`/`pushDeal` on `VroduxProvider` are no-ops today, kept
 for if/when VRODUX exposes a bidirectional API.
 
 ## 8. Security & RBAC
@@ -183,13 +183,13 @@ for if/when VRODUX exposes a bidirectional API.
 | 9. Property detail page | ✅ Property Passport (`/property/[id]`) |
 | 10. Agent profiles | ✅ `/agents`, `/agents/[slug]`, `/agencies`, `/developers` |
 | 11. Basic dashboards | ✅ user/agent/agency/developer/admin dashboards, listing + lead CRUD, verification queue |
-| 12. PropAxis AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `AI_API_KEY` to actually answer |
+| 12. Qasro AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `AI_API_KEY` to actually answer |
 | 13. Data/market intelligence | ✅ `/insights`, `/valuation`, `/investment-calculator` |
 | 14. VRODUX integration | ✅ interface + `MockVroduxProvider`, wired into lead creation — real HTTP client still pending |
 
 Everything above is verified against a live Postgres instance (Neon), including migration, seed, full
 `next build`, and manual browser testing of search → property detail → login → listing creation → lead
-capture → VRODUX webhook push. PropAxis AI runs on Groq's free tier by default (any OpenAI-compatible
+capture → VRODUX webhook push. Qasro AI runs on Groq's free tier by default (any OpenAI-compatible
 endpoint works via `AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`) — degrades to a clear error if no key is set,
 never fabricates. Self-serve agent/agency registration is live with an admin verification queue (agents
 can't publish until approved). An Opportunity/Deal pipeline UI sits on top of the Lead CRM — Kanban board

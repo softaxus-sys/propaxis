@@ -1,6 +1,6 @@
-# PropAxis.ae
+# Qasro.com
 
-**Real Estate Intelligence. Powered by AI.**
+**The Home Of Palaces**
 
 The UAE's AI-powered real estate marketplace and intelligence platform. See
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system design, data model rules and build

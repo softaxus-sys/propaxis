@@ -16,7 +16,7 @@ export function AgencyRegisterForm() {
       <div>
         <h2 className="text-lg font-semibold text-ink-950">Application submitted</h2>
         <p className="mt-2 text-sm text-sand-600">
-          Your agency is pending verification by a PropAxis admin. Once approved, you (and any agents
+          Your agency is pending verification by a Qasro admin. Once approved, you (and any agents
           who join under it) can{" "}
           <Link href="/login" className="font-medium text-ink-950 underline underline-offset-4">
             sign in

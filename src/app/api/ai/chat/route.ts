@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const result = await runAiChat(parsed.data.messages);
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "PropAxis AI is temporarily unavailable.";
+    const message = err instanceof Error ? err.message : "Qasro AI is temporarily unavailable.";
     return NextResponse.json({ error: message }, { status: 503 });
   }
 }

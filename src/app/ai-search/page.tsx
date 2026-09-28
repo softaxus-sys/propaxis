@@ -5,7 +5,7 @@ import { AiChat } from "@/components/marketing/ai-chat";
 import { Container } from "@/components/ui/container";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "PropAxis AI" };
+export const metadata: Metadata = { title: "Qasro AI" };
 
 export default async function AiSearchPage() {
   const dict = await getDictionary();

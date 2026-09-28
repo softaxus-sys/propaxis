@@ -56,10 +56,10 @@ export function AiChat() {
           <div>
             <div className="flex items-center gap-2 text-bronze-600">
               <Sparkles className="h-5 w-5" />
-              <p className="font-semibold">Ask PropAxis AI</p>
+              <p className="font-semibold">Ask Qasro AI</p>
             </div>
             <p className="mt-2 text-sm text-sand-600">
-              I search PropAxis&apos;s real listing and market data through structured tools — I never invent
+              I search Qasro&apos;s real listing and market data through structured tools — I never invent
               property information.
             </p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">

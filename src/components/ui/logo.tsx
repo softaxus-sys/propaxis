@@ -10,10 +10,10 @@ export function Logo({ className, mark = "light" }: { className?: string; mark?:
         )}
         aria-hidden
       >
-        P
+        Q
       </span>
       <span className="text-lg">
-        Prop<span className="text-bronze-500">Axis</span>
+        Qas<span className="text-bronze-500">ro</span>
       </span>
     </span>
   );

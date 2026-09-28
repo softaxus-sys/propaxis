@@ -23,7 +23,7 @@ export async function SiteFooter() {
         { href: "/agents", label: dict.footer.findAgent },
         { href: "/agencies", label: dict.footer.agencies },
         { href: "/developers", label: dict.footer.developers },
-        { href: "/for-professionals", label: dict.footer.listWithPropaxis },
+        { href: "/for-professionals", label: dict.footer.listWithQasro },
       ],
     },
     {
@@ -32,7 +32,7 @@ export async function SiteFooter() {
         { href: "/insights", label: dict.footer.marketInsights },
         { href: "/valuation", label: dict.footer.propertyValuation },
         { href: "/investment-calculator", label: dict.footer.investmentCalculator },
-        { href: "/ai-search", label: dict.footer.propaxisAi },
+        { href: "/ai-search", label: dict.footer.qasroAi },
       ],
     },
     {
@@ -68,7 +68,7 @@ export async function SiteFooter() {
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
           <Logo mark="dark" className="text-white" />
           <p className="text-xs text-sand-400">
-            © {new Date().getFullYear()} PropAxis.ae. {dict.footer.demoDataNotice}
+            © {new Date().getFullYear()} Qasro.com. {dict.footer.demoDataNotice}
           </p>
         </div>
       </Container>

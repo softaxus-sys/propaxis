@@ -72,7 +72,7 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
       const { vroduxRefId } = await vrodux.pushLead({
         externalLeadId: lead.id,
         contact: { name, email, phone },
-        source: source === "AI_SEARCH" ? "PropAxis AI Search" : "PropAxis Website Enquiry",
+        source: source === "AI_SEARCH" ? "Qasro AI Search" : "Qasro Website Enquiry",
         subject: listing?.title ?? project?.name ?? "General enquiry",
         message,
       });
@@ -84,7 +84,7 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
         data: { vroduxSyncedAt: new Date(), vroduxRefId: vroduxRefId || null },
       });
     } catch (err) {
-      // Lead is already persisted in PropAxis; VRODUX sync is best-effort and can be
+      // Lead is already persisted in Qasro; VRODUX sync is best-effort and can be
       // retried later without blocking the customer's enquiry from succeeding.
       console.error("[leads] VRODUX sync failed", err);
     }

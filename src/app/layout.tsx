@@ -18,11 +18,11 @@ const notoKufiArabic = Noto_Kufi_Arabic({
 
 export const metadata: Metadata = {
   title: {
-    default: "PropAxis.ae — Real Estate Intelligence. Powered by AI.",
-    template: "%s | PropAxis.ae",
+    default: "Qasro.com — The Home Of Palaces",
+    template: "%s | Qasro.com",
   },
   description:
-    "PropAxis is the UAE's AI-powered real estate marketplace and intelligence platform — search, understand, compare and connect across Dubai and the UAE.",
+    "Qasro is the UAE's AI-powered real estate marketplace and intelligence platform — search, understand, compare and connect across Dubai and the UAE.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

@@ -19,7 +19,7 @@ export function AiTeaser({ dict }: { dict: Dictionary }) {
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-bronze-300">
-                <Sparkles className="h-3.5 w-3.5" /> PropAxis AI
+                <Sparkles className="h-3.5 w-3.5" /> Qasro AI
               </span>
               <h2 className="mt-4 text-3xl font-semibold leading-tight">{dict.home.aiTitle}</h2>
               <p className="mt-4 max-w-md text-sand-200">{dict.home.aiSubtitle}</p>
