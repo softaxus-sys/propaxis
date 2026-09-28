@@ -1,20 +1,17 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
+// `mark` describes the surface the logo sits on: "light" = light background (navy artwork),
+// "dark" = dark background (white artwork variant).
 export function Logo({ className, mark = "light" }: { className?: string; mark?: "light" | "dark" }) {
   return (
-    <span className={cn("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
-      <span
-        className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold",
-          mark === "light" ? "bg-bronze-400 text-ink-950" : "bg-ink-950 text-bronze-300",
-        )}
-        aria-hidden
-      >
-        Q
-      </span>
-      <span className="text-lg">
-        Qas<span className="text-bronze-500">ro</span>
-      </span>
-    </span>
+    <Image
+      src={mark === "light" ? "/qasro-logo.png" : "/qasro-logo-light.png"}
+      alt="Qasro — The Home Of Palaces"
+      width={1993}
+      height={927}
+      priority
+      className={cn("h-12 w-auto", className)}
+    />
   );
 }
