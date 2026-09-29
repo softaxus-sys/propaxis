@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Kufi_Arabic } from "next/font/google";
+import Script from "next/script";
 import { getLocale } from "@/lib/i18n/server";
 import { dirFor } from "@/lib/i18n/config";
 import "./globals.css";
@@ -37,6 +38,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>
+      <Script
+        src="https://erp.vrodux.com/api/seo/snippet/f9b8624be5bb71ee6c180c3a145a822a2b142595/tag.js"
+        strategy="afterInteractive"
+      />
     </html>
   );
 }
