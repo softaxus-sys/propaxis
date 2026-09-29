@@ -14,7 +14,7 @@ export const VRODUX_CLIENT_ID = "vrodux";
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export function getVroduxClientSecret(): string | undefined {
-  return process.env.QASRO_VRODUX_CLIENT_SECRET;
+  return process.env.QASRO_VRODUX_CLIENT_SECRET?.trim();
 }
 
 export function getVroduxRedirectUri(): string | undefined {
@@ -29,11 +29,45 @@ export function secretsMatch(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-/** Validates a request's `Authorization: Bearer {client_secret}` header. */
+/**
+ * Validates a request's `Authorization: Bearer {client_secret}` header. Accepts a
+ * case-insensitive "Bearer" scheme and trims whitespace on both the header value and
+ * the configured secret — a dashboard-pasted env var or a header built by a different
+ * HTTP stack on Vrodux's end is a much more likely source of a silent mismatch here
+ * than an actually-wrong secret (see the /api/oauth/token body-based comparison, which
+ * uses the exact same env var and is more forgiving by virtue of being JSON, not a
+ * header). Logs (never the secret itself) on every failure path so a real mismatch is
+ * provable from Vercel function logs instead of guessed at.
+ */
 export function isValidClientSecretHeader(authHeader: string | null): boolean {
   const expected = getVroduxClientSecret();
-  if (!expected || !authHeader?.startsWith("Bearer ")) return false;
-  return secretsMatch(authHeader.slice("Bearer ".length), expected);
+  if (!expected) {
+    console.warn("[vrodux-oauth] QASRO_VRODUX_CLIENT_SECRET is not set on this deployment.");
+    return false;
+  }
+
+  if (!authHeader) {
+    console.warn("[vrodux-oauth] pull-key/unlink called with no Authorization header.");
+    return false;
+  }
+
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    console.warn(
+      `[vrodux-oauth] Authorization header present but not in "Bearer <token>" form (length ${authHeader.length}).`,
+    );
+    return false;
+  }
+
+  const provided = match[1].trim();
+  if (!secretsMatch(provided, expected)) {
+    console.warn(
+      `[vrodux-oauth] client_secret mismatch on pull-key/unlink. provided length=${provided.length} expected length=${expected.length}`,
+    );
+    return false;
+  }
+
+  return true;
 }
 
 /**

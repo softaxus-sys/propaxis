@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   const expectedSecret = getVroduxClientSecret();
-  if (client_id !== VRODUX_CLIENT_ID || !expectedSecret || !secretsMatch(client_secret, expectedSecret)) {
+  if (client_id !== VRODUX_CLIENT_ID || !expectedSecret || !secretsMatch(client_secret.trim(), expectedSecret)) {
     return NextResponse.json({ message: "Invalid client credentials." }, { status: 401 });
   }
 
