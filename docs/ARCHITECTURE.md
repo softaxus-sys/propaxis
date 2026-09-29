@@ -208,7 +208,7 @@ Vrodux "Connect Qasro"
        (idempotent — stored on VroduxConnection, overwritten on reconnect/key rotation)
   → later, on disconnect: POST /api/internal/agencies/{agencyId}/unlink  (best-effort)
 
-Qasro (scheduled, /api/cron/vrodux-sync, every 20 min via vercel.json)
+Qasro (scheduled, /api/cron/vrodux-sync, once daily via vercel.json — see below)
   → GET {VRODUX_API_HOST}{listingsApiBaseUrl}/properties   (X-Api-Key: {apiKey})
   → upsert each returned property as a Qasro Listing (src/modules/vrodux-integration/listing-sync.ts)
   → a previously-synced property missing from this pull → Listing.status = WITHDRAWN
@@ -229,6 +229,11 @@ handling) doesn't depend on the exact field names and is not guesswork.
 Required env vars: `QASRO_VRODUX_CLIENT_SECRET` (shared with the Vrodux team), `QASRO_VRODUX_REDIRECT_URI`
 (their exact callback URL, matched byte-for-byte), `VRODUX_API_HOST`, `CRON_SECRET` (authorizes the
 Vercel Cron hit on `/api/cron/vrodux-sync`). See `.env.example`.
+
+**Cron cadence is once daily, not 15–30 min, because this project is on Vercel Hobby**, which caps cron
+jobs at once per day — a `vercel.json` cron schedule more frequent than that gets the *entire deployment*
+rejected (this is what broke deploys after this feature first shipped). Move to Vercel Pro (or another
+host) to tighten `vercel.json`'s schedule.
 
 Out of scope for this pass (per the original spec): any billing between the two products, Vrodux trial
 auto-creation from this flow (that's §7.1, a separate mechanism), and Qasro leads routing back into a
