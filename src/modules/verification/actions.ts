@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { can } from "@/modules/auth/rbac";
+import { requestVroduxTrial } from "@/modules/vrodux-integration/tenant-provisioning";
 
 const reviewSchema = z.object({
   propertyId: z.string().min(1),
@@ -107,6 +108,13 @@ export async function reviewAgencyVerification(formData: FormData) {
       metadata: { isVerified },
     },
   });
+
+  // Approval is also the trigger for auto-provisioning a VRODUX trial tenant — see
+  // vrodux-integration/tenant-provisioning.ts. Never blocks/fails this action: it
+  // records its own outcome on the Agency row and in AuditLog.
+  if (isVerified) {
+    await requestVroduxTrial(parsed.data.agencyId, session!.user.id);
+  }
 
   revalidatePath("/admin/dashboard");
 }

@@ -157,6 +157,38 @@ Webhooks are intake-only — there's no equivalent mechanism yet for syncing Opp
 changes back into Qasro, so `pushOpportunity`/`pushDeal` on `VroduxProvider` are no-ops today, kept
 for if/when VRODUX exposes a bidirectional API.
 
+### 7.1 Auto-provisioned VRODUX trial tenants
+
+On top of the manual/self-serve connection above, approving an agency in the admin verification queue
+(`reviewAgencyVerification` in `src/modules/verification/actions.ts`) also triggers an automatic VRODUX
+**trial tenant** request, so an agency gets a working CRM without a separate VRODUX sign-up. This is
+`requestVroduxTrial` in `src/modules/vrodux-integration/tenant-provisioning.ts`.
+
+**This requires a tenant-provisioning API on the VRODUX/ERP side (`erp.vrodux.com`) that does not exist
+yet** — today VRODUX only exposes the per-tenant lead-intake webhook (§7), not a way to create a tenant
+programmatically. The contract Qasro expects, once built:
+
+```
+POST {VRODUX_PROVISIONING_URL}
+Authorization: Bearer {VRODUX_PROVISIONING_API_KEY}
+Body:    { externalRef, tenantName, adminName, adminEmail, adminPhone?, plan: "trial", trialDays }
+Returns: { tenantId, webhookUrl, loginUrl?, trialEndsAt }
+```
+
+Must be idempotent on `externalRef` (Qasro's `Agency.id`) — a retry after a timeout must not create a
+second tenant. Until `VRODUX_PROVISIONING_URL`/`VRODUX_PROVISIONING_API_KEY` are set, `requestVroduxTrial`
+fails fast and records `vroduxTrialStatus: FAILED` on the Agency plus an `AuditLog` entry — agency
+approval itself is never blocked by this.
+
+On success, `Agency.vroduxTrialStatus` moves `NONE → PROVISIONING → ACTIVE`, and the returned
+`webhookUrl` is written into the same `Agency.vroduxWebhookUrl` field a manual connection would use, so
+lead-push (§7) picks it up with no extra code path. The agency dashboard (`/agency/dashboard/vrodux`)
+shows trial status and expiry, and still lets the agency paste their own tenant's webhook instead/after.
+
+This provisioning call runs synchronously inside the approval server action — there's no job queue in
+this project (see §Remaining gaps). Acceptable at current volume; would need a retry queue if VRODUX's
+API is slow/flaky at scale.
+
 ## 8. Security & RBAC
 
 - Roles: `USER`, `AGENT`, `AGENCY_ADMIN`, `DEVELOPER`, `ADMIN` (extensible), enforced both at the

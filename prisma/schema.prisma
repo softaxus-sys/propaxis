@@ -24,6 +24,15 @@ enum Role {
   ADMIN
 }
 
+// Tracks the lifecycle of an auto-provisioned VRODUX trial tenant for an Agency —
+// see Agency.vroduxTrialStatus and vrodux-integration/tenant-provisioning.ts.
+enum VroduxTrialStatus {
+  NONE // never requested
+  PROVISIONING // request sent to VRODUX, awaiting response
+  ACTIVE // tenant created, webhook URL populated, trial running
+  FAILED // request errored — see AuditLog for the reason; admin can retry
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -132,6 +141,16 @@ model Agency {
   // and vrodux-integration/provider.ts.
   vroduxWebhookUrl  String?
   vroduxConnectedAt DateTime?
+
+  // Auto-provisioned VRODUX trial tenant (see VroduxTrialStatus enum) — triggered on agency approval (see
+  // requestVroduxTrial in vrodux-integration/tenant-provisioning.ts). Separate from
+  // vroduxWebhookUrl/vroduxConnectedAt above only in bookkeeping: once a trial tenant
+  // is provisioned, its lead-intake webhook is written into vroduxWebhookUrl like any
+  // manually-connected tenant would be — this just tracks trial status/expiry on top.
+  vroduxTrialStatus    VroduxTrialStatus @default(NONE)
+  vroduxTrialTenantId  String?
+  vroduxTrialStartedAt DateTime?
+  vroduxTrialEndsAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

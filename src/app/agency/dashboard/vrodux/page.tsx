@@ -33,16 +33,40 @@ export default async function AgencyVroduxPage() {
         any other business&apos;s VRODUX account.
       </p>
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
+        {agency.vroduxTrialStatus === "PROVISIONING" && (
+          <Card className="max-w-md space-y-1 p-6">
+            <p className="text-sm text-ink-950">Setting up your VRODUX trial…</p>
+            <p className="text-xs text-sand-500">This usually only takes a moment. Refresh to check.</p>
+          </Card>
+        )}
+
+        {agency.vroduxTrialStatus === "FAILED" && (
+          <Card className="max-w-md space-y-1 p-6">
+            <p className="text-sm text-danger">We couldn&apos;t set up your VRODUX trial automatically.</p>
+            <p className="text-xs text-sand-500">
+              You can still connect an existing VRODUX tenant below, or contact support.
+            </p>
+          </Card>
+        )}
+
         {agency.vroduxWebhookUrl ? (
           <Card className="max-w-md space-y-4 p-6">
-            <p className="text-sm text-ink-950">VRODUX webhook connected</p>
+            <p className="text-sm text-ink-950">
+              {agency.vroduxTrialStatus === "ACTIVE" ? "VRODUX trial connected" : "VRODUX webhook connected"}
+            </p>
             <p className="break-all rounded-lg bg-sand-50 px-3 py-2 text-xs text-sand-600">
               {agency.vroduxWebhookUrl}
             </p>
             <p className="text-xs text-sand-500">
               Connected {agency.vroduxConnectedAt?.toLocaleString() ?? ""}
             </p>
+            {agency.vroduxTrialStatus === "ACTIVE" && agency.vroduxTrialEndsAt && (
+              <p className="text-xs text-sand-500">
+                Trial ends {agency.vroduxTrialEndsAt.toLocaleDateString()} — connect your own tenant below anytime
+                to keep using VRODUX after that.
+              </p>
+            )}
             <form action={disconnectVrodux}>
               <input type="hidden" name="agencyId" value={agency.id} />
               <Button type="submit" variant="outline" size="sm">
@@ -51,7 +75,7 @@ export default async function AgencyVroduxPage() {
             </form>
           </Card>
         ) : (
-          <ConnectVroduxForm />
+          agency.vroduxTrialStatus !== "PROVISIONING" && <ConnectVroduxForm />
         )}
       </div>
     </DashboardShell>

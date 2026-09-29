@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { VroduxPromoCard } from "@/components/dashboard/vrodux-promo-card";
 import { requireRole } from "@/modules/auth/rbac";
 import { AGENCY_NAV as NAV } from "@/components/dashboard/agency-nav";
 
@@ -108,6 +109,8 @@ export default async function AgencyDashboardPage() {
           </div>
         ))}
       </Card>
+
+      {!agency?.vroduxWebhookUrl && <VroduxPromoCard recentLeadsCount={leads.length} />}
     </DashboardShell>
   );
 }
