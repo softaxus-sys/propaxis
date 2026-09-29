@@ -38,12 +38,41 @@ export function isValidClientSecretHeader(authHeader: string | null): boolean {
 
 /**
  * `redirect_uri` must match exactly what's registered for the client — the standard
- * OAuth anti-redirect-hijack check. No wildcards, no prefix matching.
+ * OAuth anti-redirect-hijack check. No wildcards, no prefix matching (trailing
+ * whitespace IS trimmed defensively, since a value pasted into a dashboard env var
+ * field is a common source of an invisible mismatch).
+ *
+ * Logs (never throws) on a mismatch — neither value is secret, so both are safe to log
+ * and this is the fastest way to tell "env var unset" apart from "actual mismatch"
+ * apart from "Vrodux sent something different" from Vercel's function logs, without
+ * guessing.
  */
 export function isRegisteredRedirectUri(clientId: string, redirectUri: string): boolean {
-  if (clientId !== VRODUX_CLIENT_ID) return false;
-  const registered = getVroduxRedirectUri();
-  return !!registered && redirectUri === registered;
+  if (clientId !== VRODUX_CLIENT_ID) {
+    console.warn(`[vrodux-oauth] unknown client_id: "${clientId}" (expected "${VRODUX_CLIENT_ID}")`);
+    return false;
+  }
+
+  const registered = getVroduxRedirectUri()?.trim();
+  const incoming = redirectUri.trim();
+
+  if (!registered) {
+    console.warn(
+      "[vrodux-oauth] QASRO_VRODUX_REDIRECT_URI is not set on this deployment — every /oauth/authorize " +
+        "request will fail this check until it's set AND the app is redeployed (env var changes in the " +
+        "Vercel dashboard don't apply to an already-running deployment).",
+    );
+    return false;
+  }
+
+  if (incoming !== registered) {
+    console.warn(
+      `[vrodux-oauth] redirect_uri mismatch. incoming="${incoming}" registered="${registered}"`,
+    );
+    return false;
+  }
+
+  return true;
 }
 
 /** Appends OAuth response params (code/error/state) to a redirect_uri that's already

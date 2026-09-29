@@ -29,10 +29,15 @@ export default async function VroduxAuthorizePage({
   // client_id — until then there is nowhere safe to send the user back to, so this is
   // a local error page, never a redirect. (Standard OAuth anti-redirect-hijack check.)
   if (!client_id || !redirect_uri || !isRegisteredRedirectUri(client_id, redirect_uri)) {
+    // Nothing here actually expires on this page (the only code/expiry check is later,
+    // at token exchange) — this is a client_id/redirect_uri mismatch, most often an
+    // unset or stale QASRO_VRODUX_REDIRECT_URI. See the [vrodux-oauth] warning this
+    // logs server-side (isRegisteredRedirectUri) for exactly which check failed.
     return (
       <Shell>
         <p className="text-sm text-danger">
-          This connection request is invalid or has expired. Please restart it from Vrodux.
+          This connection request couldn&apos;t be verified. Please restart it from Vrodux, or contact
+          Qasro support if this keeps happening.
         </p>
       </Shell>
     );
