@@ -8,17 +8,24 @@ import { Input } from "@/components/ui/input";
 
 const initialState: RegisterAgencyState = {};
 
-export function AgencyRegisterForm() {
+export function AgencyRegisterForm({
+  defaultAgencyName,
+  callbackUrl,
+}: {
+  defaultAgencyName?: string;
+  callbackUrl?: string;
+}) {
   const [state, formAction, pending] = useActionState(registerAgency, initialState);
 
   if (state.success) {
+    const loginHref = callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login";
     return (
       <div>
         <h2 className="text-lg font-semibold text-ink-950">Application submitted</h2>
         <p className="mt-2 text-sm text-sand-600">
           Your agency is pending verification by a Qasro admin. Once approved, you (and any agents
           who join under it) can{" "}
-          <Link href="/login" className="font-medium text-ink-950 underline underline-offset-4">
+          <Link href={loginHref} className="font-medium text-ink-950 underline underline-offset-4">
             sign in
           </Link>{" "}
           and start publishing listings.
@@ -37,7 +44,7 @@ export function AgencyRegisterForm() {
       <form action={formAction} className="mt-6 space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Agency name</label>
-          <Input name="agencyName" required placeholder="Horizon Realty" />
+          <Input name="agencyName" required placeholder="Horizon Realty" defaultValue={defaultAgencyName} />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Trade license / RERA (ORN) number</label>

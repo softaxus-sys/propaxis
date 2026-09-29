@@ -13,10 +13,14 @@ export function RegisterTabs({
   initialTab,
   agencies,
   dict,
+  defaultAgencyName,
+  callbackUrl,
 }: {
   initialTab: Tab;
   agencies: { id: string; name: string }[];
   dict: Dictionary;
+  defaultAgencyName?: string;
+  callbackUrl?: string;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
 
@@ -47,7 +51,7 @@ export function RegisterTabs({
       <div className="mt-6">
         {tab === "buyer" && <BuyerRegisterForm />}
         {tab === "agent" && <AgentRegisterForm agencies={agencies} />}
-        {tab === "agency" && <AgencyRegisterForm />}
+        {tab === "agency" && <AgencyRegisterForm defaultAgencyName={defaultAgencyName} callbackUrl={callbackUrl} />}
       </div>
     </div>
   );

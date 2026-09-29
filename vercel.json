@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/vrodux-sync",
+      "schedule": "*/20 * * * *"
+    }
+  ]
+}

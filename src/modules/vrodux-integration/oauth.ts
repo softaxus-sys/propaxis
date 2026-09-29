@@ -1,0 +1,118 @@
+/**
+ * Standard OAuth2 authorization-code flow, with Qasro as the authorization server and
+ * Vrodux as the (single, hardcoded) client. See docs/ARCHITECTURE.md §7.2 for the full
+ * flow. This is deliberately NOT a general multi-client OAuth server — there is exactly
+ * one client today (Vrodux), registered via env vars, not a database table. If a second
+ * client shows up, promote CLIENT_ID/clientSecret/redirectUri below into a real
+ * OAuthClient table.
+ */
+
+import crypto from "crypto";
+import { db } from "@/lib/db";
+
+export const VRODUX_CLIENT_ID = "vrodux";
+const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+export function getVroduxClientSecret(): string | undefined {
+  return process.env.QASRO_VRODUX_CLIENT_SECRET;
+}
+
+export function getVroduxRedirectUri(): string | undefined {
+  return process.env.QASRO_VRODUX_REDIRECT_URI;
+}
+
+/** Constant-time secret comparison — never use `===` on secrets. */
+export function secretsMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/** Validates a request's `Authorization: Bearer {client_secret}` header. */
+export function isValidClientSecretHeader(authHeader: string | null): boolean {
+  const expected = getVroduxClientSecret();
+  if (!expected || !authHeader?.startsWith("Bearer ")) return false;
+  return secretsMatch(authHeader.slice("Bearer ".length), expected);
+}
+
+/**
+ * `redirect_uri` must match exactly what's registered for the client — the standard
+ * OAuth anti-redirect-hijack check. No wildcards, no prefix matching.
+ */
+export function isRegisteredRedirectUri(clientId: string, redirectUri: string): boolean {
+  if (clientId !== VRODUX_CLIENT_ID) return false;
+  const registered = getVroduxRedirectUri();
+  return !!registered && redirectUri === registered;
+}
+
+/** Appends OAuth response params (code/error/state) to a redirect_uri that's already
+ * been validated via isRegisteredRedirectUri — handles a redirect_uri that may or may
+ * not already contain a query string. */
+export function appendOAuthParams(
+  redirectUri: string,
+  params: Record<string, string | null | undefined>,
+): string {
+  const url = new URL(redirectUri);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) url.searchParams.set(key, value);
+  }
+  return url.toString();
+}
+
+export async function issueAuthorizationCode(input: {
+  clientId: string;
+  redirectUri: string;
+  userId: string;
+  agencyId: string;
+  state: string | null;
+}): Promise<string> {
+  const code = crypto.randomBytes(32).toString("base64url");
+  await db.vroduxOAuthCode.create({
+    data: {
+      code,
+      clientId: input.clientId,
+      redirectUri: input.redirectUri,
+      userId: input.userId,
+      agencyId: input.agencyId,
+      state: input.state,
+      expiresAt: new Date(Date.now() + CODE_TTL_MS),
+    },
+  });
+  return code;
+}
+
+export type ConsumeCodeResult =
+  | { ok: true; agencyId: string; userId: string }
+  | { ok: false; reason: "invalid_grant" | "invalid_client" };
+
+/**
+ * Exchanges a one-time code for the agency it was issued for. Enforces single-use,
+ * expiry, and that it's being redeemed by the same client_id + redirect_uri it was
+ * issued for. Marks the code used even on a matched-but-expired redemption attempt,
+ * so a leaked/replayed code can't be retried.
+ */
+export async function consumeAuthorizationCode(input: {
+  code: string;
+  clientId: string;
+  redirectUri: string;
+}): Promise<ConsumeCodeResult> {
+  const record = await db.vroduxOAuthCode.findUnique({ where: { code: input.code } });
+
+  if (!record || record.clientId !== input.clientId || record.redirectUri !== input.redirectUri) {
+    return { ok: false, reason: "invalid_grant" };
+  }
+
+  if (record.usedAt) {
+    return { ok: false, reason: "invalid_grant" };
+  }
+
+  // Mark used regardless of expiry so a retry can never redeem it, expired or not.
+  await db.vroduxOAuthCode.update({ where: { code: input.code }, data: { usedAt: new Date() } });
+
+  if (record.expiresAt.getTime() < Date.now()) {
+    return { ok: false, reason: "invalid_grant" };
+  }
+
+  return { ok: true, agencyId: record.agencyId, userId: record.userId };
+}

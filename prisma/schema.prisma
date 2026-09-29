@@ -26,6 +26,102 @@ enum Role {
 
 // Tracks the lifecycle of an auto-provisioned VRODUX trial tenant for an Agency —
 // see Agency.vroduxTrialStatus and vrodux-integration/tenant-provisioning.ts.
+// ─────────────────────────────────────────────────────────────────────────
+// VRODUX OAuth connection: an agency that runs its business ON Vrodux (as opposed to
+// the trial-provisioning flow above, which is for agencies that don't) connects that
+// Vrodux tenant to Qasro via a standard OAuth authorization-code flow initiated from
+// Vrodux. Once connected, Qasro polls that agency's Vrodux listings API and syncs
+// "published to Qasro" properties in as Listings. See docs/ARCHITECTURE.md §7.2 and
+// src/modules/vrodux-integration/oauth.ts / listing-sync.ts.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum VroduxConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+// Single-use authorization code issued at the end of the /oauth/authorize consent
+// screen, exchanged by Vrodux's backend at POST /api/oauth/token. Short-lived (~10 min)
+// and bound to the client_id + redirect_uri it was issued for — see oauth.ts.
+model VroduxOAuthCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  clientId    String
+  redirectUri String
+  userId      String
+  agencyId    String
+  state       String?
+  expiresAt   DateTime
+  usedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("vrodux_oauth_codes")
+}
+
+// One row per Agency that has connected its Vrodux tenant. `apiKey`/`listingsApiBaseUrl`
+// are handed to us by Vrodux's backend at POST /api/internal/agencies/{agencyId}/pull-key
+// right after token exchange, and are what listing-sync.ts uses to pull that agency's
+// published listings. Never log `apiKey`.
+model VroduxConnection {
+  id       String @id @default(cuid())
+  agencyId String @unique
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  status VroduxConnectionStatus @default(CONNECTED)
+
+  apiKey             String?
+  listingsApiBaseUrl String?
+
+  connectedAt    DateTime?
+  disconnectedAt DateTime?
+
+  // Set when a pull gets a 401 from Vrodux (key rotated/revoked on their side) — sync
+  // stops for this agency until they reconnect through /oauth/authorize again, which
+  // triggers a fresh pull-key call and clears this.
+  reconnectNeeded Boolean @default(false)
+
+  lastPulledAt   DateTime?
+  lastPullStatus String?
+  lastPullError  String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncedListings VroduxSyncedListing[]
+
+  @@map("vrodux_connections")
+}
+
+// Maps one Vrodux property id to the Qasro Listing it was synced into, so a repeat
+// pull updates the same Listing instead of creating a duplicate, and a property that
+// stops appearing in Vrodux's /properties response can be delisted (see listing-sync.ts).
+model VroduxSyncedListing {
+  id           String           @id @default(cuid())
+  connectionId String
+  connection   VroduxConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  vroduxPropertyId String
+  listingId        String  @unique
+  listing          Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Vrodux sometimes returns price as a fuzzy human label (e.g. "700k(rented till 29
+  // Feb 2026)") alongside a raw number — the raw number goes on Listing itself, this
+  // keeps the original label for display/debugging since parsing it is lossy.
+  rawPriceLabel String?
+
+  lastSeenAt DateTime // updated on every pull the property still appears in
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([connectionId, vroduxPropertyId])
+  @@map("vrodux_synced_listings")
+}
+
+// Tracks the lifecycle of an auto-provisioned VRODUX trial tenant for an Agency —
+// see Agency.vroduxTrialStatus and vrodux-integration/tenant-provisioning.ts.
 enum VroduxTrialStatus {
   NONE // never requested
   PROVISIONING // request sent to VRODUX, awaiting response
@@ -155,8 +251,9 @@ model Agency {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  agents   Agent[]
-  listings Listing[]
+  agents           Agent[]
+  listings         Listing[]
+  vroduxConnection VroduxConnection?
 
   @@index([slug])
   @@map("agencies")
@@ -480,6 +577,8 @@ model Listing {
 
   leads    Lead[]
   viewings Viewing[]
+
+  vroduxSync VroduxSyncedListing?
 
   @@index([propertyId])
   @@index([agentId])

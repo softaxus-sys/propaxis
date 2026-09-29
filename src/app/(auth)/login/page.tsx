@@ -5,27 +5,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/logo";
 import { getDictionary } from "@/lib/i18n/server";
+import { isSafeInternalPath } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
   const dict = await getDictionary();
+  const { callbackUrl } = await searchParams;
+  // Used e.g. by /oauth/authorize sending an unauthenticated user here to log in and
+  // come straight back to the connection request. Only ever an internal path — see
+  // isSafeInternalPath (never trust this param as an absolute/external URL).
+  const redirectTo = isSafeInternalPath(callbackUrl) ? callbackUrl : "/dashboard";
 
   async function login(formData: FormData) {
     "use server";
+    const target = formData.get("callbackUrl") as string | null;
     try {
       await signIn("credentials", {
         email: formData.get("email"),
         password: formData.get("password"),
-        redirectTo: "/dashboard",
+        redirectTo: isSafeInternalPath(target) ? target : "/dashboard",
       });
     } catch (err) {
       if (err instanceof AuthError) {
         const { redirect } = await import("next/navigation");
-        redirect("/login?error=invalid");
+        const qs = isSafeInternalPath(target) ? `&callbackUrl=${encodeURIComponent(target)}` : "";
+        redirect(`/login?error=invalid${qs}`);
       }
       throw err;
     }
@@ -44,6 +52,7 @@ export default async function LoginPage({
           <SearchParamsError searchParams={searchParams} dict={dict} />
 
           <form action={login} className="mt-6 space-y-4">
+            <input type="hidden" name="callbackUrl" value={redirectTo} />
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-950">{dict.auth.emailLabel}</label>
               <Input type="email" name="email" required placeholder="you@example.com" />
@@ -59,7 +68,10 @@ export default async function LoginPage({
 
           <p className="mt-6 text-center text-sm text-sand-600">
             {dict.auth.noAccount}{" "}
-            <Link href="/register" className="font-medium text-ink-950 underline underline-offset-4">
+            <Link
+              href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(redirectTo)}` : "/register"}
+              className="font-medium text-ink-950 underline underline-offset-4"
+            >
               {dict.auth.createOne}
             </Link>
           </p>

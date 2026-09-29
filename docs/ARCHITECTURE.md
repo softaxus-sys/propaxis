@@ -189,6 +189,51 @@ This provisioning call runs synchronously inside the approval server action — 
 this project (see §Remaining gaps). Acceptable at current volume; would need a retry queue if VRODUX's
 API is slow/flaky at scale.
 
+### 7.2 VRODUX OAuth connection + listing sync (agencies already on Vrodux)
+
+This is a THIRD, distinct VRODUX mechanism, separate from both the lead-push webhook (§7) and trial
+auto-provisioning (§7.1): an agency that already runs its business **on** Vrodux connects that tenant to
+Qasro so its Vrodux-published properties sync in as Qasro listings. Direction is the reverse of the other
+two — Qasro is the one pulling data, and Qasro acts as an OAuth **authorization server** with Vrodux as
+the (single, hardcoded) OAuth **client**.
+
+```
+Vrodux "Connect Qasro"
+  → GET /oauth/authorize?client_id=vrodux&redirect_uri=...&state=...&company_name=...   (src/app/oauth/authorize)
+  → user logs in/registers on Qasro, must have an APPROVED agency (Agency.isVerified)
+  → consent → redirect back with ?code=...&state=...  (or ?error=...&state=... on denial/not-approved)
+  → Vrodux backend: POST /api/oauth/token  { grant_type, code, redirect_uri, client_id, client_secret }
+       → 200 { agencyId }  |  403 { message } if not approved  |  400 otherwise
+  → Vrodux backend: POST /api/internal/agencies/{agencyId}/pull-key  { apiKey, listingsApiBaseUrl }
+       (idempotent — stored on VroduxConnection, overwritten on reconnect/key rotation)
+  → later, on disconnect: POST /api/internal/agencies/{agencyId}/unlink  (best-effort)
+
+Qasro (scheduled, /api/cron/vrodux-sync, every 20 min via vercel.json)
+  → GET {VRODUX_API_HOST}{listingsApiBaseUrl}/properties   (X-Api-Key: {apiKey})
+  → upsert each returned property as a Qasro Listing (src/modules/vrodux-integration/listing-sync.ts)
+  → a previously-synced property missing from this pull → Listing.status = WITHDRAWN
+  → 401 from Vrodux → VroduxConnection.reconnectNeeded = true, stop pulling until reconnected
+```
+
+Code lives in `src/modules/vrodux-integration/oauth.ts` (authorization-code issuance/validation, all
+secret comparisons are timing-safe), `oauth-actions.ts` (the consent screen's approve/deny server
+actions), `listing-sync-client.ts` (the Vrodux API client — retries 5xx/timeouts, throws a distinct
+`VroduxUnauthorizedError` on 401), and `listing-sync.ts` (the field mapping + upsert/delist engine).
+
+**The field mapping is unconfirmed.** `mapVroduxProperty` in `listing-sync.ts` guesses at Vrodux's actual
+JSON field names from domain context only (see the warning comment at the top of that file) — get a real
+sample payload from the Vrodux/Softaxis team, or call the endpoint with a real test `apiKey`, before
+trusting this against production data. Everything else in that file (upsert/delist orchestration, error
+handling) doesn't depend on the exact field names and is not guesswork.
+
+Required env vars: `QASRO_VRODUX_CLIENT_SECRET` (shared with the Vrodux team), `QASRO_VRODUX_REDIRECT_URI`
+(their exact callback URL, matched byte-for-byte), `VRODUX_API_HOST`, `CRON_SECRET` (authorizes the
+Vercel Cron hit on `/api/cron/vrodux-sync`). See `.env.example`.
+
+Out of scope for this pass (per the original spec): any billing between the two products, Vrodux trial
+auto-creation from this flow (that's §7.1, a separate mechanism), and Qasro leads routing back into a
+connected agency's Vrodux CRM.
+
 ## 8. Security & RBAC
 
 - Roles: `USER`, `AGENT`, `AGENCY_ADMIN`, `DEVELOPER`, `ADMIN` (extensible), enforced both at the
@@ -218,6 +263,8 @@ API is slow/flaky at scale.
 | 12. Qasro AI | ✅ tool-calling orchestrator + chat UI (`/ai-search`) — needs `AI_API_KEY` to actually answer |
 | 13. Data/market intelligence | ✅ `/insights`, `/valuation`, `/investment-calculator` |
 | 14. VRODUX integration | ✅ interface + `MockVroduxProvider`, wired into lead creation — real HTTP client still pending |
+| 15. VRODUX trial auto-provisioning | ✅ contract + Qasro-side plumbing (§7.1) — blocked on VRODUX exposing a tenant-provisioning API |
+| 16. VRODUX OAuth + listing sync | ✅ full authorization-code flow + scheduled pull/upsert/delist (§7.2) — field mapping unconfirmed against a real payload |
 
 Everything above is verified against a live Postgres instance (Neon), including migration, seed, full
 `next build`, and manual browser testing of search → property detail → login → listing creation → lead
@@ -234,4 +281,6 @@ Remaining gaps: Redis/OpenSearch aren't wired up (search runs directly against P
 in-memory); the real VRODUX HTTP client only covers lead intake (`WebhookVroduxProvider`) — no
 Opportunity/Deal sync back from VRODUX, since its webhook is one-directional; i18n coverage is partial
 (dashboards and secondary marketing pages are English-only); no listing photo uploads or map/geo search;
-no automated tests/CI.
+no automated tests/CI; the VRODUX OAuth listing-sync field mapping (§7.2) needs verification against a
+real Vrodux payload before it can be trusted with production data; VRODUX trial auto-provisioning (§7.1)
+needs VRODUX to build the tenant-provisioning endpoint it currently has no equivalent of.

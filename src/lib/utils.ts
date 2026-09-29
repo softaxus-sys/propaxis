@@ -21,6 +21,15 @@ export function formatAed(amount: number | string, options?: { compact?: boolean
   }).format(value);
 }
 
+/**
+ * Guards `?callbackUrl=` / `?redirect=` style params against open-redirect abuse:
+ * only an internal path starting with a single `/` is safe — `//evil.com`,
+ * `https://evil.com`, and anything else is scheme-relative or absolute and rejected.
+ */
+export function isSafeInternalPath(path: string | null | undefined): path is string {
+  return !!path && path.startsWith("/") && !path.startsWith("//");
+}
+
 export function slugify(input: string) {
   return input
     .toLowerCase()
