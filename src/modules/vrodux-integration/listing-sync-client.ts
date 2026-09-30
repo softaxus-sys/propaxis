@@ -5,11 +5,35 @@
  * to "properties this agency checked as public/published" — Qasro never sees anything
  * beyond that.
  *
- * Field names below (`VroduxProperty`) are UNCONFIRMED — see the big warning in
- * listing-sync.ts before changing the mapping.
+ * CONFIRMED against a real response from erp.vrodux.com on 2026-09-30 (agency
+ * cmumxxxdd0000kz040swh8fz5) — this is no longer the guesswork the original build had
+ * to ship with. Real shape:
+ *
+ *   GET {listingsApiBaseUrl}/properties?page=1
+ *   → { items: VroduxPropertyRaw[], page, pageSize, totalCount, totalPages, hasNext, hasPrev }
+ *
+ *   VroduxPropertyRaw = {
+ *     id, reference, name, propertyType, address, city, emirate,
+ *     totalArea, totalUnits, availableUnits, developer, description, publishedAt,
+ *     imageUrls: string[]  ← RELATIVE paths (e.g. "/api/real-estate/website/images/...
+ *                             ?exp=...&sig=..."), signed + expiring — see listing-sync.ts.
+ *     units: VroduxUnitRaw[]
+ *   }
+ *   VroduxUnitRaw = {
+ *     id, unitNumber, unitType, area, floor, rentPerYear, salePrice,
+ *     furnishing, view, bedrooms, bathrooms, parking
+ *   }
+ *
+ * i.e. one "property" is a BUILDING with potentially several units, each of which is
+ * its own listing — not the flat one-row-per-listing shape originally assumed. See the
+ * mapping in listing-sync.ts.
  */
 
 const VRODUX_API_HOST = () => process.env.VRODUX_API_HOST || "https://erp.vrodux.com";
+
+export function vroduxApiHost(): string {
+  return VRODUX_API_HOST();
+}
 
 export class VroduxUnauthorizedError extends Error {
   constructor() {
@@ -61,23 +85,79 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Minimal shape we rely on — everything else passes through as `unknown` until the
- * mapping in listing-sync.ts is verified against a real payload. */
-export type VroduxCompany = Record<string, unknown>;
-export type VroduxProperty = Record<string, unknown> & { id?: unknown; propertyId?: unknown };
+export type VroduxUnit = {
+  id: string;
+  unitNumber?: string | null;
+  unitType?: string | null;
+  area?: number | null;
+  floor?: number | null;
+  rentPerYear?: number | null;
+  salePrice?: number | null;
+  furnishing?: string | null;
+  view?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parking?: number | null;
+};
 
-export async function fetchVroduxCompany(listingsApiBaseUrl: string, apiKey: string): Promise<VroduxCompany> {
-  const data = await vroduxFetch(`${VRODUX_API_HOST()}${listingsApiBaseUrl}/company`, apiKey);
-  return (data ?? {}) as VroduxCompany;
+export type VroduxProperty = {
+  id: string;
+  reference?: string | null;
+  name?: string | null;
+  propertyType?: string | null;
+  address?: string | null;
+  city?: string | null;
+  emirate?: string | null;
+  totalArea?: number | null;
+  totalUnits?: number | null;
+  availableUnits?: number | null;
+  developer?: string | null;
+  description?: string | null;
+  publishedAt?: string | null;
+  imageUrls?: string[] | null;
+  units?: VroduxUnit[] | null;
+};
+
+type VroduxPropertiesPage = {
+  items: VroduxProperty[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
+function isPropertiesPage(data: unknown): data is VroduxPropertiesPage {
+  return !!data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).items);
 }
 
+const MAX_PAGES = 200; // safety cap — 200 pages at Vrodux's own pageSize is far beyond any real agency
+
+/** Fetches every page of an agency's published properties, following `hasNext` until
+ * exhausted (or MAX_PAGES, as a guard against a runaway loop if Vrodux's pagination
+ * ever misbehaves). */
 export async function fetchVroduxProperties(listingsApiBaseUrl: string, apiKey: string): Promise<VroduxProperty[]> {
-  const data = await vroduxFetch(`${VRODUX_API_HOST()}${listingsApiBaseUrl}/properties`, apiKey);
-  if (Array.isArray(data)) return data as VroduxProperty[];
-  // Some list APIs wrap the array in an envelope (e.g. { data: [...] }) — accept that
-  // shape too since we don't have a confirmed real payload to pin this down exactly.
-  if (data && typeof data === "object" && Array.isArray((data as Record<string, unknown>).data)) {
-    return (data as Record<string, unknown>).data as VroduxProperty[];
+  const all: VroduxProperty[] = [];
+  let page = 1;
+
+  while (page <= MAX_PAGES) {
+    const data = await vroduxFetch(`${VRODUX_API_HOST()}${listingsApiBaseUrl}/properties?page=${page}`, apiKey);
+
+    if (Array.isArray(data)) {
+      // Defensive fallback in case a future/other deployment returns a bare array.
+      all.push(...(data as VroduxProperty[]));
+      break;
+    }
+
+    if (!isPropertiesPage(data)) {
+      throw new Error("Unexpected /properties response shape from Vrodux (expected { items: [...] }).");
+    }
+
+    all.push(...data.items);
+    if (!data.hasNext) break;
+    page++;
   }
-  throw new Error("Unexpected /properties response shape from Vrodux (expected an array).");
+
+  return all;
 }

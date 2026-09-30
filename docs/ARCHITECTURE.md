@@ -233,11 +233,22 @@ secret comparisons are timing-safe), `oauth-actions.ts` (the consent screen's ap
 actions), `listing-sync-client.ts` (the Vrodux API client — retries 5xx/timeouts, throws a distinct
 `VroduxUnauthorizedError` on 401), and `listing-sync.ts` (the field mapping + upsert/delist engine).
 
-**The field mapping is unconfirmed.** `mapVroduxProperty` in `listing-sync.ts` guesses at Vrodux's actual
-JSON field names from domain context only (see the warning comment at the top of that file) — get a real
-sample payload from the Vrodux/Softaxis team, or call the endpoint with a real test `apiKey`, before
-trusting this against production data. Everything else in that file (upsert/delist orchestration, error
-handling) doesn't depend on the exact field names and is not guesswork.
+**The field mapping is CONFIRMED** against a real response from erp.vrodux.com (2026-09-30, agency
+`cmumxxxdd0000kz040swh8fz5`) — the original build shipped with a best-guess mapping that turned out wrong
+in two ways once real data arrived: `/properties` is paginated (`{ items, page, hasNext, ... }`, not a bare
+array), and one Vrodux "property" is a **building containing several units** (`property.units[]`), not a
+flat one-row-per-listing shape. That maps onto this schema's existing hierarchy more naturally than the
+original assumption did:
+
+```
+Vrodux property  → Qasro Building  (keyed on Vrodux's property id, not name — see resolveBuilding)
+Vrodux unit      → Qasro Property  (the physical unit) + Listing (the commercial offer)
+```
+
+A unit becomes a `SALE` listing if `salePrice > 0`, `RENT` if `rentPerYear > 0` (a unit with neither is
+skipped — nothing to price it with). `imageUrls` are relative and signed+expiring; they're host-prefixed
+on the way in but never treated as long-lived — each pull overwrites them with whatever Vrodux currently
+signs. See the mapping comment at the top of `listing-sync.ts` for the exact confirmed shape.
 
 Required env vars: `QASRO_VRODUX_CLIENT_SECRET` (shared with the Vrodux team), `QASRO_VRODUX_REDIRECT_URI`
 (their exact callback URL, matched byte-for-byte), `VRODUX_API_HOST`, `CRON_SECRET` (authorizes the
@@ -282,7 +293,7 @@ connected agency's Vrodux CRM.
 | 13. Data/market intelligence | ✅ `/insights`, `/valuation`, `/investment-calculator` |
 | 14. VRODUX integration | ✅ interface + `MockVroduxProvider`, wired into lead creation — real HTTP client still pending |
 | 15. VRODUX trial auto-provisioning | ✅ contract + Qasro-side plumbing (§7.1) — blocked on VRODUX exposing a tenant-provisioning API |
-| 16. VRODUX OAuth + listing sync | ✅ full authorization-code flow + scheduled pull/upsert/delist (§7.2) — field mapping unconfirmed against a real payload |
+| 16. VRODUX OAuth + listing sync | ✅ full authorization-code flow + scheduled/on-demand pull/upsert/delist (§7.2) — field mapping confirmed against real production data, verified end-to-end |
 
 Everything above is verified against a live Postgres instance (Neon), including migration, seed, full
 `next build`, and manual browser testing of search → property detail → login → listing creation → lead
@@ -299,6 +310,5 @@ Remaining gaps: Redis/OpenSearch aren't wired up (search runs directly against P
 in-memory); the real VRODUX HTTP client only covers lead intake (`WebhookVroduxProvider`) — no
 Opportunity/Deal sync back from VRODUX, since its webhook is one-directional; i18n coverage is partial
 (dashboards and secondary marketing pages are English-only); no listing photo uploads or map/geo search;
-no automated tests/CI; the VRODUX OAuth listing-sync field mapping (§7.2) needs verification against a
-real Vrodux payload before it can be trusted with production data; VRODUX trial auto-provisioning (§7.1)
-needs VRODUX to build the tenant-provisioning endpoint it currently has no equivalent of.
+no automated tests/CI; VRODUX trial auto-provisioning (§7.1) needs VRODUX to build the tenant-provisioning
+endpoint it currently has no equivalent of.
