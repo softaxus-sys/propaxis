@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, X, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,6 +22,10 @@ export function PropertyGallery({
   children: React.ReactNode;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // "Fit" shrinks a tall/large photo down to fit the screen (losing detail on very
+  // large images); zoomed shows it at natural size inside a scrollable area instead,
+  // so nothing about the photo is ever actually inaccessible, just scrolled to.
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const close = useCallback(() => setOpenIndex(null), []);
   const showPrev = useCallback(() => {
@@ -30,6 +34,12 @@ export function PropertyGallery({
   const showNext = useCallback(() => {
     setOpenIndex((i) => (i === null ? null : (i + 1) % images.length));
   }, [images.length]);
+
+  // Reset zoom on every open/navigate — a zoomed-in scroll position from the previous
+  // photo would otherwise carry over and make the next one look cut off too.
+  useEffect(() => {
+    setIsZoomed(false);
+  }, [openIndex]);
 
   useEffect(() => {
     if (openIndex === null) return;
@@ -101,45 +111,65 @@ export function PropertyGallery({
           className="fixed inset-0 z-50 flex flex-col bg-black/95"
           onClick={close}
         >
-          <div className="flex items-center justify-between p-4 text-white">
+          <div className="flex shrink-0 items-center justify-between p-4 text-white">
             <span className="text-sm text-sand-300">
               {openIndex + 1} / {images.length}
             </span>
-            <button
-              type="button"
-              onClick={close}
-              aria-label="Close"
-              className="rounded-full p-2 hover:bg-white/10"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsZoomed((z) => !z);
+                }}
+                aria-label={isZoomed ? "Zoom out" : "Zoom in"}
+                className="rounded-full p-2 hover:bg-white/10"
+              >
+                {isZoomed ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
+              </button>
+              <button type="button" onClick={close} aria-label="Close" className="rounded-full p-2 hover:bg-white/10">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
           </div>
 
-          <div className="relative flex flex-1 items-center justify-center px-4 pb-4" onClick={(e) => e.stopPropagation()}>
-            {images.length > 1 && (
+          {/* min-h-0 is load-bearing here: without it, a flex child won't shrink below
+              its content's intrinsic size, so a tall photo pushes this box (and the
+              arrows centered within it) taller than the viewport instead of the photo
+              scaling down to fit — exactly the cut-off/misplaced-arrows bug this fixes. */}
+          <div className="relative min-h-0 flex-1" onClick={(e) => e.stopPropagation()}>
+            {images.length > 1 && !isZoomed && (
               <button
                 type="button"
                 onClick={showPrev}
                 aria-label="Previous photo"
-                className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:start-4"
+                className="absolute start-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:start-4"
               >
                 <ChevronLeft className="h-6 w-6" />
               </button>
             )}
 
-            {/* eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photos */}
-            <img
-              src={images[openIndex]}
-              alt={`${alt} — photo ${openIndex + 1} of ${images.length}`}
-              className="max-h-full max-w-full rounded-lg object-contain"
-            />
+            <div className={cn("h-full w-full", isZoomed ? "overflow-auto" : "flex items-center justify-center overflow-hidden p-4")}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photos */}
+              <img
+                src={images[openIndex]}
+                alt={`${alt} — photo ${openIndex + 1} of ${images.length}`}
+                onClick={() => setIsZoomed((z) => !z)}
+                className={cn(
+                  "rounded-lg",
+                  isZoomed
+                    ? "w-auto max-w-none cursor-zoom-out"
+                    : "max-h-full max-w-full cursor-zoom-in object-contain",
+                )}
+              />
+            </div>
 
-            {images.length > 1 && (
+            {images.length > 1 && !isZoomed && (
               <button
                 type="button"
                 onClick={showNext}
                 aria-label="Next photo"
-                className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:end-4"
+                className="absolute end-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:end-4"
               >
                 <ChevronRight className="h-6 w-6" />
               </button>
@@ -148,7 +178,7 @@ export function PropertyGallery({
 
           {images.length > 1 && (
             <div
-              className="flex gap-2 overflow-x-auto p-4 pt-0"
+              className="flex shrink-0 gap-2 overflow-x-auto p-4 pt-0"
               onClick={(e) => e.stopPropagation()}
             >
               {images.map((url, i) => (
