@@ -285,6 +285,10 @@ async function upsertSyncedListing(
       images: mapped.images,
       agentId,
       agencyId,
+      // Matches what a manually-published listing gets (listings/actions.ts) — without
+      // this, every synced listing sorts last in every publishedAt-desc query (search,
+      // homepage featured, agent/area pages), since null sorts after any real date.
+      publishedAt: new Date(),
       ...priceField,
     },
   });

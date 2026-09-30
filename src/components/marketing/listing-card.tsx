@@ -15,6 +15,7 @@ export type ListingCardData = {
   askingPriceAed: Prisma.Decimal | null;
   askingRentAedYear: Prisma.Decimal | null;
   isDemoData: boolean;
+  images: string[];
   property: {
     area: { name: string };
     bedrooms: number | null;
@@ -28,11 +29,15 @@ export function ListingCard({ listing, dict }: { listing: ListingCardData; dict:
     listing.type === "SALE"
       ? formatAed(Number(listing.askingPriceAed ?? 0), { compact: true })
       : `${formatAed(Number(listing.askingRentAedYear ?? 0), { compact: true })}/yr`;
+  const coverImage = listing.images[0];
 
   return (
     <Link href={`/property/${listing.id}`} className="group block">
       <Card className="overflow-hidden transition-shadow group-hover:shadow-md">
-        <div className="relative flex h-44 items-end bg-gradient-to-br from-ink-800 to-ink-950 p-4">
+        <div
+          className="relative flex h-44 items-end bg-gradient-to-br from-ink-800 to-ink-950 bg-cover bg-center p-4"
+          style={coverImage ? { backgroundImage: `linear-gradient(to top, rgba(10,15,31,0.65), rgba(10,15,31,0.1)), url(${coverImage})` } : undefined}
+        >
           <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute start-4 top-4">
             {listing.type === "SALE" ? dict.common.forSale : dict.common.forRent}
           </Badge>

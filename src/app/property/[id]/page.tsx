@@ -47,7 +47,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <span>{property.area.name}</span>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-ink-800 to-ink-950 p-8 text-white">
+          <div
+            className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-ink-800 to-ink-950 bg-cover bg-center p-8 text-white"
+            style={
+              listing.images[0]
+                ? {
+                    backgroundImage: `linear-gradient(to top, rgba(10,15,31,0.85), rgba(10,15,31,0.35)), url(${listing.images[0]})`,
+                  }
+                : undefined
+            }
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -81,6 +90,21 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               )}
             </div>
           </div>
+
+          {listing.images.length > 1 && (
+            <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-6">
+              {listing.images.slice(1, 7).map((url) => (
+                // eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photos (agency uploads, Vrodux-synced signed URLs); see docs/ARCHITECTURE.md §7.2
+                <img
+                  key={url}
+                  src={url}
+                  alt=""
+                  className="h-20 w-full rounded-lg object-cover sm:h-24"
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          )}
 
           <div className="mt-8 grid gap-8 lg:grid-cols-3">
             <div className="space-y-8 lg:col-span-2">
