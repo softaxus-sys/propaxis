@@ -207,13 +207,26 @@ Vrodux "Connect Qasro"
   → Vrodux backend: POST /api/internal/agencies/{agencyId}/pull-key  { apiKey, listingsApiBaseUrl }
        (idempotent — stored on VroduxConnection, overwritten on reconnect/key rotation)
   → later, on disconnect: POST /api/internal/agencies/{agencyId}/unlink  (best-effort)
+  → tenant checks/unchecks "List on Qasro": POST /api/internal/agencies/{agencyId}/sync-now
+       { propertyIds: [...] }  (ids are informational only, see below — best-effort, no hard retry)
 
-Qasro (scheduled, /api/cron/vrodux-sync, once daily via vercel.json — see below)
+Qasro (scheduled, /api/cron/vrodux-sync, once daily via vercel.json — see below — OR on-demand via sync-now)
   → GET {VRODUX_API_HOST}{listingsApiBaseUrl}/properties   (X-Api-Key: {apiKey})
   → upsert each returned property as a Qasro Listing (src/modules/vrodux-integration/listing-sync.ts)
   → a previously-synced property missing from this pull → Listing.status = WITHDRAWN
   → 401 from Vrodux → VroduxConnection.reconnectNeeded = true, stop pulling until reconnected
 ```
+
+`sync-now` exists because once-daily cron (see below) is too slow for a tenant expecting their listing to
+show up right after checking a box. It's authenticated identically to pull-key/unlink (same
+`isValidClientSecretHeader` check, same shared secret) and deliberately does the simplest thing that
+works: it ignores the `propertyIds` in the body and just re-runs `syncAgencyListings` — the exact same
+per-agency resync function the cron job calls — for that agency, immediately. That function already diffs
+the agency's full current `/properties` list against what's synced, so it correctly handles a newly
+published property AND a withdrawn one in the same pass; a narrower "sync just these ids" path would be
+more code for no real benefit. The response returns instantly (`200`) while the resync itself runs in
+`next/server`'s `after()` (Vercel's `waitUntil` under the hood) so Vrodux isn't kept waiting on the
+upstream Vrodux fetch it's indirectly triggering.
 
 Code lives in `src/modules/vrodux-integration/oauth.ts` (authorization-code issuance/validation, all
 secret comparisons are timing-safe), `oauth-actions.ts` (the consent screen's approve/deny server
