@@ -143,11 +143,17 @@ async function resolveSyncOwnerAgent(agencyId: string) {
 }
 
 export type SyncResult = { pulled: number; upserted: number; delisted: number };
+export type SyncTrigger = "cron" | "sync_now" | "manual";
 
 /** Pulls, upserts, and delists one agency's Vrodux-synced listings. Never throws for
  * ordinary transient failures — caller (the cron/sync-now routes) reads the outcome off
- * the VroduxConnection row instead, per docs/ARCHITECTURE.md §7.2. */
-export async function syncAgencyListings(connectionId: string): Promise<SyncResult> {
+ * the VroduxConnection row instead, per docs/ARCHITECTURE.md §7.2.
+ *
+ * `trigger` is recorded on the connection row purely for diagnosis — it's the
+ * difference between "sync-now never got called" and "sync-now ran fine but Vrodux's
+ * own /properties response wasn't updated yet" being directly queryable instead of
+ * requiring log archaeology (see the field's comment in schema.prisma). */
+export async function syncAgencyListings(connectionId: string, trigger: SyncTrigger = "manual"): Promise<SyncResult> {
   const connection = await db.vroduxConnection.findUnique({ where: { id: connectionId } });
   if (!connection || connection.status !== "CONNECTED" || connection.reconnectNeeded) {
     return { pulled: 0, upserted: 0, delisted: 0 };
@@ -162,7 +168,7 @@ export async function syncAgencyListings(connectionId: string): Promise<SyncResu
     const properties = await fetchVroduxProperties(connection.listingsApiBaseUrl, connection.apiKey);
     const owner = await resolveSyncOwnerAgent(connection.agencyId);
     if (!owner) {
-      await recordPullOutcome(connectionId, "error", "No agent exists to attribute synced listings to.");
+      await recordPullOutcome(connectionId, "error", trigger, "No agent exists to attribute synced listings to.");
       return { pulled: properties.length, upserted: 0, delisted: 0 };
     }
 
@@ -181,7 +187,10 @@ export async function syncAgencyListings(connectionId: string): Promise<SyncResu
 
     const delisted = await delistMissing(connectionId, pullStartedAt);
 
-    await recordPullOutcome(connectionId, "ok");
+    await recordPullOutcome(connectionId, "ok", trigger);
+    console.log(
+      `[vrodux-sync] agency=${connection.agencyId} trigger=${trigger} pulled=${properties.length} upserted=${upserted} delisted=${delisted}`,
+    );
     return { pulled: properties.length, upserted, delisted };
   } catch (err) {
     if (err instanceof VroduxUnauthorizedError) {
@@ -189,19 +198,19 @@ export async function syncAgencyListings(connectionId: string): Promise<SyncResu
         where: { id: connectionId },
         data: { reconnectNeeded: true },
       });
-      await recordPullOutcome(connectionId, "reconnect_needed", err.message);
+      await recordPullOutcome(connectionId, "reconnect_needed", trigger, err.message);
       return { pulled: 0, upserted: 0, delisted: 0 };
     }
 
-    await recordPullOutcome(connectionId, "error", err instanceof Error ? err.message : "unknown error");
+    await recordPullOutcome(connectionId, "error", trigger, err instanceof Error ? err.message : "unknown error");
     return { pulled: 0, upserted: 0, delisted: 0 };
   }
 }
 
-async function recordPullOutcome(connectionId: string, status: string, error?: string): Promise<void> {
+async function recordPullOutcome(connectionId: string, status: string, trigger: SyncTrigger, error?: string): Promise<void> {
   await db.vroduxConnection.update({
     where: { id: connectionId },
-    data: { lastPulledAt: new Date(), lastPullStatus: status, lastPullError: error ?? null },
+    data: { lastPulledAt: new Date(), lastPullStatus: status, lastPullTrigger: trigger, lastPullError: error ?? null },
   });
 }
 
@@ -320,7 +329,7 @@ export async function syncAllConnectedAgencies(): Promise<Record<string, SyncRes
 
   const results: Record<string, SyncResult> = {};
   for (const { id } of connections) {
-    results[id] = await syncAgencyListings(id);
+    results[id] = await syncAgencyListings(id, "cron");
   }
   return results;
 }

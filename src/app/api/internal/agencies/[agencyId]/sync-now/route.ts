@@ -23,11 +23,26 @@ import { syncAgencyListings } from "@/modules/vrodux-integration/listing-sync";
  * resync here just gets picked up by the next scheduled cron run instead.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ agencyId: string }> }) {
+  const { agencyId } = await params;
+
+  // Logged unconditionally, before the auth check, so "did Vrodux even call this
+  // endpoint" is answerable directly from Vercel's function logs — the auth check
+  // below already logs its own failures ([vrodux-oauth]), but a request that never
+  // arrives at all is otherwise indistinguishable from a sync that ran fine but found
+  // Vrodux's own /properties response not yet updated (see recordPullOutcome/
+  // lastPullTrigger for the latter).
+  let propertyIdsCount: number | "unknown" = "unknown";
+  try {
+    const body = (await request.clone().json()) as { propertyIds?: unknown };
+    if (Array.isArray(body?.propertyIds)) propertyIdsCount = body.propertyIds.length;
+  } catch {
+    // Body is informational only — an unparseable/missing body doesn't block anything.
+  }
+  console.log(`[vrodux-sync-now] request received for agency=${agencyId} propertyIds=${propertyIdsCount}`);
+
   if (!isValidClientSecretHeader(request.headers.get("authorization"))) {
     return NextResponse.json({ message: "Invalid or missing client credentials." }, { status: 401 });
   }
-
-  const { agencyId } = await params;
 
   const connection = await db.vroduxConnection.findUnique({ where: { agencyId } });
   if (!connection) {
@@ -36,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ age
 
   after(async () => {
     try {
-      await syncAgencyListings(connection.id);
+      await syncAgencyListings(connection.id, "sync_now");
     } catch (err) {
       // syncAgencyListings already records its own outcome on the connection row and
       // doesn't normally throw — this is just a last-resort safety net.

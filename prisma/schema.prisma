@@ -85,6 +85,12 @@ model VroduxConnection {
   lastPulledAt   DateTime?
   lastPullStatus String?
   lastPullError  String?   @db.Text
+  // "cron" | "sync_now" | "manual" — which trigger caused the most recent pull. Exists
+  // because without it, a `sync_now`-triggered pull that ran but found Vrodux's own
+  // /properties response not yet updated looks IDENTICAL, from this row alone, to
+  // sync-now never having been called at all — this field is the difference between
+  // those two very different problems being directly queryable vs. requiring guesswork.
+  lastPullTrigger String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
