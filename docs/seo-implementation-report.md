@@ -103,8 +103,16 @@ Still open, below, renumbered:
    `BUILDING` (no public page exists to enrich at all — would need a new page built
    first, not just this pattern) and `PROJECT` (a real page exists at
    `/new-projects/[slug]`, just not wired up yet).
-5. **Listing photo editing** — upload only works at listing creation time; no flow yet
-   to add/remove/reorder photos on an existing listing.
+5. ~~Listing photo editing~~ — **Fixed.** `/agent/dashboard/listings/[id]` lets the
+   owning agent (or the owning agency's admin, or a site admin) edit a listing's
+   fields and photos — remove any existing photo, add up to 12 total via the same
+   upload pipeline as creation. Vrodux-synced listings are excluded (no "Edit" link,
+   and the page itself redirects away if visited directly) since Vrodux overwrites
+   them on every sync — editing here would just get silently clobbered. Verified with
+   a real scripted test against the live Neon database (type switch SALE→RENT
+   correctly clears the inapplicable price field, a removed photo is actually gone,
+   a newly "uploaded" one is appended) and a real `next start` request to the new
+   route to confirm it executes rather than just compiles.
 
 ## Manual setup steps required (things only you can do)
 

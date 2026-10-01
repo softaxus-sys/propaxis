@@ -29,7 +29,7 @@ export default async function AgentDashboardPage() {
   const [listings, leads] = await Promise.all([
     db.listing.findMany({
       where: { agentId: agent.id },
-      include: { property: { include: { area: true } } },
+      include: { property: { include: { area: true } }, vroduxSync: true },
       orderBy: { createdAt: "desc" },
     }),
     db.lead.findMany({
@@ -88,6 +88,7 @@ export default async function AgentDashboardPage() {
               <th className="px-4 py-3 font-medium">Area</th>
               <th className="px-4 py-3 font-medium">Price</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -107,11 +108,23 @@ export default async function AgentDashboardPage() {
                 <td className="px-4 py-3">
                   <Badge variant={listing.status === "ACTIVE" ? "success" : "neutral"}>{listing.status}</Badge>
                 </td>
+                <td className="px-4 py-3 text-right">
+                  {listing.vroduxSync ? (
+                    <span className="text-xs text-sand-400">Synced from Vrodux</span>
+                  ) : (
+                    <Link
+                      href={`/agent/dashboard/listings/${listing.id}`}
+                      className="text-sm font-medium text-bronze-600 hover:text-bronze-700"
+                    >
+                      Edit
+                    </Link>
+                  )}
+                </td>
               </tr>
             ))}
             {listings.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sand-500">
+                <td colSpan={5} className="px-4 py-8 text-center text-sand-500">
                   No listings yet.
                 </td>
               </tr>
