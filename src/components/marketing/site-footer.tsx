@@ -33,6 +33,7 @@ export async function SiteFooter() {
         { href: "/valuation", label: dict.footer.propertyValuation },
         { href: "/investment-calculator", label: dict.footer.investmentCalculator },
         { href: "/ai-search", label: dict.footer.qasroAi },
+        { href: "/guides", label: dict.footer.guides },
       ],
     },
     {

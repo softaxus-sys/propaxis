@@ -30,6 +30,7 @@ export const ar: Dictionary = {
     propertyValuation: "تقييم العقار",
     investmentCalculator: "حاسبة الاستثمار",
     qasroAi: "Qasro AI",
+    guides: "أدلة",
     companyTitle: "الشركة",
     about: "عن Qasro",
     vroduxForBusiness: "VRODUX للأعمال",

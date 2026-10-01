@@ -30,6 +30,7 @@ export const en: Dictionary = {
     propertyValuation: "Property Valuation",
     investmentCalculator: "Investment Calculator",
     qasroAi: "Qasro AI",
+    guides: "Guides",
     companyTitle: "Company",
     about: "About Qasro",
     vroduxForBusiness: "VRODUX for business",

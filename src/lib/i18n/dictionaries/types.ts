@@ -28,6 +28,7 @@ export type Dictionary = {
     propertyValuation: string;
     investmentCalculator: string;
     qasroAi: string;
+    guides: string;
     companyTitle: string;
     about: string;
     vroduxForBusiness: string;
