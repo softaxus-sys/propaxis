@@ -77,9 +77,7 @@ export async function SiteFooter() {
                 {dict.footer.privacy}
               </Link>
             </div>
-            <p className="text-xs text-sand-400">
-              © {new Date().getFullYear()} Qasro.com. {dict.footer.demoDataNotice}
-            </p>
+            <p className="text-xs text-sand-400">© {new Date().getFullYear()} Qasro.com.</p>
           </div>
         </div>
       </Container>

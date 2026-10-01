@@ -37,8 +37,6 @@ export const en: Dictionary = {
     contact: "Contact",
     terms: "Terms of Service",
     privacy: "Privacy Policy",
-    demoDataNotice:
-      'Property data marked "Demo data" is illustrative only and does not represent real UAE listings or transactions.',
   },
   home: {
     tagline: "The Home Of Palaces",

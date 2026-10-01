@@ -35,7 +35,6 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     heading: "4. Listings and data accuracy",
     body: [
       "Listings, prices, and property details are supplied by agents, agencies, developers, or connected third-party systems (including Vrodux, for agencies that connect their tenant). We don't independently verify every detail of every listing and don't guarantee its accuracy, availability, or completeness.",
-      "Some content on the platform is clearly labeled \"Demo data\" for illustrative purposes and does not represent a real listing, transaction, or market figure.",
       "Market intelligence (valuations, price trends, comparables) is generated from available data and is an estimate, not a guarantee of a property's value or a substitute for professional advice.",
     ],
   },

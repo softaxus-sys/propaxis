@@ -35,7 +35,6 @@ export type Dictionary = {
     contact: string;
     terms: string;
     privacy: string;
-    demoDataNotice: string;
   };
   home: {
     tagline: string;
