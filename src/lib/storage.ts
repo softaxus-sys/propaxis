@@ -19,9 +19,19 @@
  *     multi-breakpoint responsive srcset is NOT built — see docs/cms-specification.md
  *     §E for why that's an explicit, documented scope line for this phase, not an
  *     oversight.
+ *
+ * PUBLIC URL FORMAT — Contabo-specific, verified against the real account, not
+ * assumed: a plain `{endpoint}/{bucket}/{key}` URL 401s even on a bucket with public
+ * sharing enabled and an object whose S3 ACL correctly shows AllUsers:READ. Contabo's
+ * actual public path requires the tenant/canonical-user id prefixed to the bucket
+ * name — `{endpoint}/{tenantId}:{bucket}/{key}` — confirmed by testing both forms
+ * directly against a live object. The tenant id is derived at runtime from
+ * GetBucketAcl's Owner field (cached after the first call) rather than hardcoded or
+ * requiring an extra env var, so this keeps working if the account's id ever surfaces
+ * differently.
  */
 
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetBucketAclCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import crypto from "crypto";
 
@@ -45,7 +55,7 @@ export class InvalidImageError extends Error {
 
 let cachedClient: S3Client | null | undefined;
 
-function getClient(): S3Client | null {
+function getStorageClient(): S3Client | null {
   if (cachedClient !== undefined) return cachedClient;
 
   const endpoint = process.env.S3_ENDPOINT;
@@ -66,10 +76,33 @@ function getClient(): S3Client | null {
   return cachedClient;
 }
 
-function publicUrlFor(key: string): string {
+let cachedTenantId: string | null | undefined;
+
+/** The part of the S3 canonical owner id before the "$" — that's the prefix Contabo's
+ * public URL path needs alongside the bucket name. Fetched once via GetBucketAcl and
+ * cached for the life of the process. */
+async function getTenantId(client: S3Client): Promise<string | null> {
+  if (cachedTenantId !== undefined) return cachedTenantId;
+
+  try {
+    const acl = await client.send(new GetBucketAclCommand({ Bucket: process.env.S3_BUCKET! }));
+    const ownerId = acl.Owner?.ID;
+    cachedTenantId = ownerId ? ownerId.split("$")[0] : null;
+  } catch {
+    cachedTenantId = null;
+  }
+  return cachedTenantId;
+}
+
+async function publicUrlFor(client: S3Client, key: string): Promise<string> {
   const endpoint = process.env.S3_ENDPOINT!.replace(/\/$/, "");
   const bucket = process.env.S3_BUCKET!;
-  return `${endpoint}/${bucket}/${key}`;
+  const tenantId = await getTenantId(client);
+  // Falls back to the plain (AWS-standard) path-style URL if the tenant id lookup
+  // ever fails — won't be publicly viewable on Contabo specifically in that case, but
+  // fails toward "a URL that's at least structurally correct" rather than throwing.
+  const bucketSegment = tenantId ? `${tenantId}:${bucket}` : bucket;
+  return `${endpoint}/${bucketSegment}/${key}`;
 }
 
 export type UploadImageInput = {
@@ -86,7 +119,7 @@ export type UploadImageInput = {
  * a raw AWS SDK error to a caller that might render it as-is.
  */
 export async function uploadImage({ buffer, mimeType, folder }: UploadImageInput): Promise<string> {
-  const client = getClient();
+  const client = getStorageClient();
   if (!client) throw new StorageNotConfiguredError();
 
   if (buffer.length > MAX_UPLOAD_BYTES) {
@@ -129,5 +162,5 @@ export async function uploadImage({ buffer, mimeType, folder }: UploadImageInput
     }),
   );
 
-  return publicUrlFor(key);
+  return publicUrlFor(client, key);
 }

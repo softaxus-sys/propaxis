@@ -44,18 +44,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.1 },
   ];
 
-  const [listings, agents, agencies, developers, areas, projects, guides] = await Promise.all([
-    db.listing.findMany({ where: { status: "ACTIVE" }, select: { id: true, updatedAt: true } }),
-    db.agent.findMany({ where: { isVerified: true }, select: { slug: true, updatedAt: true } }),
-    db.agency.findMany({ where: { isVerified: true }, select: { slug: true, updatedAt: true } }),
-    db.developer.findMany({ select: { slug: true, updatedAt: true } }),
-    db.area.findMany({ select: { slug: true, updatedAt: true } }),
-    db.project.findMany({ select: { slug: true, updatedAt: true } }),
-    db.cmsPage.findMany({
-      where: { type: "ARTICLE", status: "PUBLISHED", noindex: false },
-      select: { slug: true, updatedAt: true },
-    }),
-  ]);
+  // Sequential, not Promise.all: seven concurrent connections intermittently exceeded
+  // Neon's pooler limit during build-time static generation (observed directly —
+  // failures moved to a different model each retry, the signature of a connection-
+  // count race, not a real outage). This route isn't latency-sensitive (hourly ISR,
+  // never blocks a user request), so there's no cost to being sequential here.
+  const listings = await db.listing.findMany({ where: { status: "ACTIVE" }, select: { id: true, updatedAt: true } });
+  const agents = await db.agent.findMany({ where: { isVerified: true }, select: { slug: true, updatedAt: true } });
+  const agencies = await db.agency.findMany({ where: { isVerified: true }, select: { slug: true, updatedAt: true } });
+  const developers = await db.developer.findMany({ select: { slug: true, updatedAt: true } });
+  const areas = await db.area.findMany({ select: { slug: true, updatedAt: true } });
+  const projects = await db.project.findMany({ select: { slug: true, updatedAt: true } });
+  const guides = await db.cmsPage.findMany({
+    where: { type: "ARTICLE", status: "PUBLISHED", noindex: false },
+    select: { slug: true, updatedAt: true },
+  });
 
   return [
     ...staticPages,
