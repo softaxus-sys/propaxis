@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CmsFormState } from "@/modules/cms/actions";
@@ -13,11 +13,16 @@ const TYPES: CmsPage["type"][] = [
 export function CmsPageForm({
   action,
   page,
+  areas,
+  currentAreaId,
 }: {
   action: (prev: CmsFormState, formData: FormData) => Promise<CmsFormState>;
   page?: CmsPage;
+  areas?: { id: string; name: string; city: string }[];
+  currentAreaId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {} as CmsFormState);
+  const [type, setType] = useState<CmsPage["type"]>(page?.type ?? "ARTICLE");
 
   return (
     <form action={formAction} className="mt-6 grid gap-8 lg:grid-cols-3">
@@ -28,7 +33,12 @@ export function CmsPageForm({
       <div className="space-y-4 lg:col-span-2">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Type</label>
-          <select name="type" defaultValue={page?.type ?? "ARTICLE"} className="h-10 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm">
+          <select
+            name="type"
+            value={type}
+            onChange={(e) => setType(e.target.value as CmsPage["type"])}
+            className="h-10 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm"
+          >
             {TYPES.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -39,6 +49,24 @@ export function CmsPageForm({
             Only ARTICLE renders publicly today, at /guides/[slug] — see docs/cms-specification.md.
           </p>
         </div>
+
+        {type === "COMMUNITY" && areas && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink-950">Area</label>
+            <select name="areaId" defaultValue={currentAreaId ?? ""} className="h-10 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm">
+              <option value="">— not linked to an area —</option>
+              {areas.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}, {a.city}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-sand-500">
+              Once this page is PUBLISHED, its content renders on that area&apos;s own page
+              (/areas/[slug]) — see docs/cms-specification.md §C.
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Title</label>

@@ -37,8 +37,14 @@ export async function getCmsPageById(id: string) {
       author: { select: { id: true, name: true } },
       reviewer: { select: { id: true, name: true } },
       revisions: { orderBy: { createdAt: "desc" }, include: { savedBy: { select: { name: true } } } },
+      area: { select: { id: true } }, // which Area (if any) currently links to this COMMUNITY page
     },
   });
+}
+
+/** For the COMMUNITY-type area picker in the CMS editor. */
+export async function listAreasForLinking() {
+  return db.area.findMany({ select: { id: true, name: true, city: true }, orderBy: { name: "asc" } });
 }
 
 export async function cmsDashboardCounts() {

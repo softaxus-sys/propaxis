@@ -21,6 +21,10 @@ export async function getAreaBySlug(slug: string) {
     where: { slug },
     include: {
       marketMetrics: { orderBy: { periodEnd: "desc" }, take: 12 },
+      // Editor-authored long-form content, if this area has one linked — see
+      // docs/cms-specification.md §C. Only ever shown/used if actually PUBLISHED;
+      // a draft/in-review community page linked here must stay invisible publicly.
+      cmsPage: true,
     },
   });
   if (!area) return null;

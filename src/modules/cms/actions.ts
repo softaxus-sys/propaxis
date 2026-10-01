@@ -28,6 +28,7 @@ const pageFieldsSchema = z.object({
   ogDescription: z.string().max(200).optional(),
   ogImageUrl: z.string().url().optional().or(z.literal("")),
   editorialNotes: z.string().max(2000).optional(),
+  areaId: z.string().optional(), // only meaningful when type === COMMUNITY — see syncAreaLink
 });
 
 export type CmsFormState = { error?: string; success?: boolean; id?: string };
@@ -47,6 +48,7 @@ function readFields(formData: FormData) {
     ogDescription: formData.get("ogDescription") || undefined,
     ogImageUrl: formData.get("ogImageUrl") || undefined,
     editorialNotes: formData.get("editorialNotes") || undefined,
+    areaId: formData.get("areaId") || undefined,
   });
 }
 
@@ -65,12 +67,14 @@ export async function createCmsPage(_prev: CmsFormState, formData: FormData): Pr
   const parsed = readFields(formData);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { slug: requestedSlug, canonicalUrl, ogImageUrl, ...rest } = parsed.data;
+  const { slug: requestedSlug, canonicalUrl, ogImageUrl, areaId, ...rest } = parsed.data;
   const slug = await uniqueSlug(slugify(requestedSlug || rest.title));
 
   const page = await db.cmsPage.create({
     data: { ...rest, slug, canonicalUrl: canonicalUrl || null, ogImageUrl: ogImageUrl || null, authorId: user.id },
   });
+
+  if (rest.type === "COMMUNITY") await syncAreaLink(page.id, areaId);
 
   await db.cmsPageRevision.create({
     data: { pageId: page.id, savedById: user.id, ...revisionSnapshot(page) },
@@ -84,6 +88,19 @@ export async function createCmsPage(_prev: CmsFormState, formData: FormData): Pr
   redirect(`/admin/dashboard/content/${page.id}`);
 }
 
+/** Keeps Area.cmsPageId in sync with the editor's selection for a COMMUNITY page —
+ * the FK lives on Area (see docs/cms-specification.md §C), so linking/relinking/
+ * unlinking from the CmsPage side means updating the Area row(s), not this page. */
+async function syncAreaLink(pageId: string, areaId: string | undefined): Promise<void> {
+  const currentlyLinked = await db.area.findFirst({ where: { cmsPageId: pageId } });
+  if (currentlyLinked && currentlyLinked.id !== areaId) {
+    await db.area.update({ where: { id: currentlyLinked.id }, data: { cmsPageId: null } });
+  }
+  if (areaId && areaId !== currentlyLinked?.id) {
+    await db.area.update({ where: { id: areaId }, data: { cmsPageId: pageId } });
+  }
+}
+
 export async function updateCmsPage(id: string, _prev: CmsFormState, formData: FormData): Promise<CmsFormState> {
   const user = await requireAdmin();
   const parsed = readFields(formData);
@@ -92,7 +109,7 @@ export async function updateCmsPage(id: string, _prev: CmsFormState, formData: F
   const existing = await db.cmsPage.findUnique({ where: { id } });
   if (!existing) return { error: "Page not found." };
 
-  const { slug: requestedSlug, canonicalUrl, ogImageUrl, ...rest } = parsed.data;
+  const { slug: requestedSlug, canonicalUrl, ogImageUrl, areaId, ...rest } = parsed.data;
   let slug = existing.slug;
   if (requestedSlug && slugify(requestedSlug) !== existing.slug) {
     if (!(await isSlugAvailable(slugify(requestedSlug), id))) {
@@ -117,6 +134,9 @@ export async function updateCmsPage(id: string, _prev: CmsFormState, formData: F
     where: { id },
     data: { ...rest, slug, canonicalUrl: canonicalUrl || null, ogImageUrl: ogImageUrl || null },
   });
+
+  if (updated.type === "COMMUNITY") await syncAreaLink(id, areaId);
+  revalidatePath("/areas"); // area pages can render linked CMS content now
 
   await db.auditLog.create({
     data: { userId: user.id, action: "cms_page.updated", entityType: "CmsPage", entityId: updated.id },

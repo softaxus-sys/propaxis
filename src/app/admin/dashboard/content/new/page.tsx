@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { requireRole } from "@/modules/auth/rbac";
 import { createCmsPage } from "@/modules/cms/actions";
+import { listAreasForLinking } from "@/modules/cms/queries";
 import { CmsPageForm } from "@/components/admin/cms-page-form";
 
 const NAV = [
@@ -15,10 +16,12 @@ export default async function NewCmsPagePage() {
   if (!session?.user) redirect("/login");
   if (!requireRole(session.user.role as never, ["ADMIN"])) redirect("/dashboard");
 
+  const areas = await listAreasForLinking();
+
   return (
     <DashboardShell userName={session.user.name ?? ""} roleLabel="Admin" nav={NAV}>
       <h1 className="text-2xl font-semibold text-ink-950">New page</h1>
-      <CmsPageForm action={createCmsPage} />
+      <CmsPageForm action={createCmsPage} areas={areas} />
     </DashboardShell>
   );
 }

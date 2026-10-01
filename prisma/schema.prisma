@@ -362,6 +362,14 @@ model Area {
   properties    Property[]
   marketMetrics MarketMetric[]
 
+  // Optional link to a COMMUNITY-type CmsPage holding editor-authored long-form
+  // content (neighborhood guide copy, SEO title/description) for this area — enriches
+  // this existing page rather than creating a separate competing URL, per
+  // docs/cms-specification.md §C. Area.description above remains the short plain-text
+  // blurb; this is the richer, revisable, SEO-complete version.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
+
   @@index([city])
   @@map("areas")
 }
@@ -1001,6 +1009,9 @@ model CmsPage {
   updatedAt DateTime @updatedAt
 
   revisions CmsPageRevision[]
+  // Back-relation for a COMMUNITY-type page linked from Area.cmsPageId — optional and
+  // only ever set from the Area side (see docs/cms-specification.md §C).
+  area      Area?
 
   @@index([status])
   @@index([type])

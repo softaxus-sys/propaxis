@@ -10,25 +10,31 @@ import { DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getAreaBySlug } from "@/modules/areas/queries";
 import { getDictionary } from "@/lib/i18n/server";
+import { renderCmsBody } from "@/modules/cms/render";
 
 /** Description is derived from the area's real listing count, not a fixed template —
  * see docs/seo-architecture.md on avoiding "thin" identical location pages. A
- * zero-listing area is a real content gap, not something to paper over with copy. */
+ * zero-listing area is a real content gap, not something to paper over with copy.
+ * A linked, PUBLISHED COMMUNITY CmsPage's own SEO title/description take priority when
+ * present — editor-authored copy beats a mechanically-derived one. */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const result = await getAreaBySlug(slug);
   if (!result) return {};
 
   const { area, listings } = result;
+  const cms = area.cmsPage?.status === "PUBLISHED" ? area.cmsPage : null;
+
   const description =
-    listings.length > 0
+    cms?.seoDescription ||
+    (listings.length > 0
       ? `${listings.length} propert${listings.length === 1 ? "y" : "ies"} for sale and rent in ${area.name}, ${area.city} — prices, photos and market trends on Qasro.`
-      : `Explore ${area.name}, ${area.city} on Qasro — market trends and upcoming listings.`;
+      : `Explore ${area.name}, ${area.city} on Qasro — market trends and upcoming listings.`);
 
   return {
-    title: `Properties in ${area.name}, ${area.city}`,
+    title: cms?.seoTitle || `Properties in ${area.name}, ${area.city}`,
     description,
-    alternates: { canonical: `https://www.qasro.com/areas/${slug}` },
+    alternates: { canonical: cms?.canonicalUrl || `https://www.qasro.com/areas/${slug}` },
   };
 }
 
@@ -38,6 +44,8 @@ export default async function AreaDetailPage({ params }: { params: Promise<{ slu
   if (!result) notFound();
 
   const { area, listings, latestMetric } = result;
+  const cmsHtml =
+    area.cmsPage?.status === "PUBLISHED" ? renderCmsBody(area.cmsPage.body) : null;
 
   return (
     <>
@@ -86,6 +94,17 @@ export default async function AreaDetailPage({ params }: { params: Promise<{ slu
                 </p>
               </Card>
             </div>
+          )}
+
+          {cmsHtml && (
+            <div
+              className="mt-10 max-w-2xl space-y-4 text-sm leading-relaxed text-sand-700
+                [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink-950
+                [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-ink-950
+                [&_a]:text-bronze-600 [&_a]:underline [&_a]:underline-offset-4
+                [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_li]:mt-1"
+              dangerouslySetInnerHTML={{ __html: cmsHtml }}
+            />
           )}
 
           <h2 className="mt-10 text-lg font-semibold text-ink-950">
