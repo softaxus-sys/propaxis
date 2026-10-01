@@ -6,6 +6,7 @@ import { createListing, type CreateListingState } from "@/modules/listings/actio
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ImageFileInput } from "@/components/ui/image-file-input";
 
 const initialState: CreateListingState = {};
 
@@ -88,6 +89,11 @@ export function NewListingForm({ areas }: { areas: { id: string; name: string }[
             <label className="mb-1.5 block text-sm font-medium text-ink-950">Area (sqft)</label>
             <Input type="number" name="areaSqft" min={0} />
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-ink-950">Photos</label>
+          <ImageFileInput name="images" maxFiles={12} />
         </div>
 
         {type === "SALE" ? (

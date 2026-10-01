@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageUrlField } from "@/components/admin/image-url-field";
 import type { CmsFormState } from "@/modules/cms/actions";
 import type { CmsPage } from "@prisma/client";
 
@@ -156,7 +157,7 @@ export function CmsPageForm({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-sand-600">OG image URL</label>
-              <Input name="ogImageUrl" type="url" defaultValue={page?.ogImageUrl ?? ""} />
+              <ImageUrlField name="ogImageUrl" defaultValue={page?.ogImageUrl ?? ""} />
             </div>
           </div>
         </div>

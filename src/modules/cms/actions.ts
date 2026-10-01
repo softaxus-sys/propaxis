@@ -7,11 +7,32 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { isSlugAvailable } from "./queries";
+import { uploadImage, StorageNotConfiguredError, InvalidImageError } from "@/lib/storage";
 
 async function requireAdmin() {
   const session = await auth();
   if (session?.user.role !== "ADMIN") throw new Error("Not authorized.");
   return session.user;
+}
+
+/** Called directly from the editor's image-upload button (not a full form submit —
+ * see src/components/admin/image-url-field.tsx), so it returns a result object rather
+ * than throwing, matching the shape that client code is checking. */
+export async function uploadCmsImage(formData: FormData): Promise<{ url?: string; error?: string }> {
+  await requireAdmin(); // throws if not admin — acceptable here since this is an explicit admin-only action invoked from an authenticated admin page, not a public form
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "No file provided." };
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const url = await uploadImage({ buffer, mimeType: file.type, folder: "cms" });
+    return { url };
+  } catch (err) {
+    if (err instanceof StorageNotConfiguredError) return { error: "Image uploads aren't configured yet." };
+    if (err instanceof InvalidImageError) return { error: err.message };
+    throw err;
+  }
 }
 
 const pageFieldsSchema = z.object({

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { can } from "@/modules/auth/rbac";
+import { uploadImage, StorageNotConfiguredError, InvalidImageError } from "@/lib/storage";
 
 const createListingSchema = z.object({
   title: z.string().min(4).max(160),
@@ -62,6 +63,32 @@ export async function createListing(_prev: CreateListingState, formData: FormDat
 
   const data = parsed.data;
 
+  // Native multi-file <input> entries come through formData.getAll() — a form with no
+  // file selected still yields one empty (size 0, name "") File, filtered out here so
+  // existing listing creation with no photos behaves exactly as before.
+  const imageFiles = formData.getAll("images").filter((f): f is File => f instanceof File && f.size > 0);
+  const MAX_IMAGES = 12;
+  if (imageFiles.length > MAX_IMAGES) {
+    return { error: `Please upload at most ${MAX_IMAGES} photos.` };
+  }
+
+  const images: string[] = [];
+  for (const file of imageFiles) {
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const url = await uploadImage({ buffer, mimeType: file.type, folder: "listings" });
+      images.push(url);
+    } catch (err) {
+      if (err instanceof StorageNotConfiguredError) {
+        return { error: "Photo uploads aren't available right now — please contact support." };
+      }
+      if (err instanceof InvalidImageError) {
+        return { error: `${file.name || "One of your photos"}: ${err.message}` };
+      }
+      throw err;
+    }
+  }
+
   const property = await db.property.create({
     data: {
       type: data.propertyType,
@@ -84,6 +111,7 @@ export async function createListing(_prev: CreateListingState, formData: FormDat
       agentId: agent.id,
       agencyId: agent.agencyId,
       publishedAt: new Date(),
+      images,
     },
   });
 
