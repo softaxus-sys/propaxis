@@ -1,9 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit } from "@/lib/rate-limit";
 
 const registerAgencySchema = z.object({
   contactName: z.string().min(2).max(120),
@@ -25,6 +28,16 @@ export type RegisterAgencyState = { error?: string; success?: boolean };
  * integration, just an admin review queue standing in for it).
  */
 export async function registerAgency(_prev: RegisterAgencyState, formData: FormData): Promise<RegisterAgencyState> {
+  const ip = (await headers()).get("x-forwarded-for") ?? "unknown";
+  const { ok } = await rateLimit(`register:${ip}`, 5, 60_000);
+  if (!ok) {
+    return { error: "Too many attempts — please wait a moment and try again." };
+  }
+
+  if (!(await verifyTurnstile(formData.get("cf-turnstile-response")))) {
+    return { error: "Verification failed — please try again." };
+  }
+
   const parsed = registerAgencySchema.safeParse({
     contactName: formData.get("contactName"),
     email: formData.get("email"),

@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const session = await auth();
   const rateLimitKey = session?.user?.id ?? req.headers.get("x-forwarded-for") ?? "anonymous";
 
-  const { ok } = rateLimit(rateLimitKey, 20, 60_000);
+  const { ok } = await rateLimit(rateLimitKey, 20, 60_000);
   if (!ok) {
     return NextResponse.json({ error: "Too many requests. Please wait a moment and try again." }, { status: 429 });
   }

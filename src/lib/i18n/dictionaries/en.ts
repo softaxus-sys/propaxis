@@ -34,6 +34,8 @@ export const en: Dictionary = {
     about: "About Qasro",
     vroduxForBusiness: "VRODUX for business",
     contact: "Contact",
+    terms: "Terms of Service",
+    privacy: "Privacy Policy",
     demoDataNotice:
       'Property data marked "Demo data" is illustrative only and does not represent real UAE listings or transactions.',
   },

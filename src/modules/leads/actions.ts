@@ -1,10 +1,15 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 import { getVroduxProvider } from "@/modules/vrodux-integration/client";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
+import { leadNotificationEmail } from "./email-template";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const enquirySchema = z.object({
   name: z.string().min(2).max(120),
@@ -20,6 +25,18 @@ const enquirySchema = z.object({
 export type EnquiryState = { error?: string; success?: boolean };
 
 export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Promise<EnquiryState> {
+  // Server actions are callable directly, not just from the form that carries the
+  // CAPTCHA widget — rate limit here too rather than relying on the UI alone.
+  const ip = (await headers()).get("x-forwarded-for") ?? "unknown";
+  const { ok } = await rateLimit(`enquiry:${ip}`, 5, 60_000);
+  if (!ok) {
+    return { error: "Too many enquiries — please wait a moment and try again." };
+  }
+
+  if (!(await verifyTurnstile(formData.get("cf-turnstile-response")))) {
+    return { error: "Verification failed — please try again." };
+  }
+
   const parsed = enquirySchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -56,15 +73,21 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
   });
 
   const listing = listingId
-    ? await db.listing.findUnique({ where: { id: listingId }, include: { agency: true } })
+    ? await db.listing.findUnique({
+        where: { id: listingId },
+        include: { agency: true, agent: { include: { user: true } } },
+      })
     : null;
   const project = projectId ? await db.project.findUnique({ where: { id: projectId } }) : null;
-  const directAgent = agentId ? await db.agent.findUnique({ where: { id: agentId }, include: { agency: true } }) : null;
+  const directAgent = agentId
+    ? await db.agent.findUnique({ where: { id: agentId }, include: { agency: true, user: true } })
+    : null;
 
   // Which agency's VRODUX tenant (if any) this lead's push is scoped to — resolved
   // from the listing's agency, or the directly-contacted agent's agency. Projects
   // belong to developers, not agencies, so a project-only enquiry has no VRODUX target.
   const agency = listing?.agency ?? directAgent?.agency ?? null;
+  const subject = listing?.title ?? project?.name ?? "General enquiry";
 
   if (agency?.vroduxWebhookUrl) {
     try {
@@ -73,7 +96,7 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
         externalLeadId: lead.id,
         contact: { name, email, phone },
         source: source === "AI_SEARCH" ? "Qasro AI Search" : "Qasro Website Enquiry",
-        subject: listing?.title ?? project?.name ?? "General enquiry",
+        subject,
         message,
       });
 
@@ -88,6 +111,28 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
       // retried later without blocking the customer's enquiry from succeeding.
       console.error("[leads] VRODUX sync failed", err);
     }
+  } else {
+    // No connected VRODUX tenant for this agency (or no agency at all) — fall back to
+    // emailing whoever listed the property directly, cc'ing the agency's registered
+    // email, so the enquiry doesn't just sit unseen in the dashboard.
+    const targetAgentUser = listing?.agent.user ?? directAgent?.user;
+    const siteUrl = (process.env.NEXTAUTH_URL || "https://www.qasro.com").replace(/\/$/, "");
+    const listingUrl = listingId ? `${siteUrl}/property/${listingId}` : undefined;
+    const { subject: emailSubject, html, text } = leadNotificationEmail({
+      subject,
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone,
+      message,
+      listingUrl,
+    });
+
+    // Still nothing to route to (e.g. a project-only enquiry with no agent) — better to
+    // land in a shared inbox than be silently dropped.
+    const to = targetAgentUser?.email ?? CONTACT_EMAIL;
+    const cc = targetAgentUser && agency?.email && agency.email !== to ? agency.email : undefined;
+
+    await sendEmail({ to, cc, subject: emailSubject, html, text, replyTo: email });
   }
 
   return { success: true };

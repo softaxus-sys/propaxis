@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { submitEnquiry, type EnquiryState } from "@/modules/leads/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Turnstile } from "@/components/ui/turnstile";
 import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 
 const initialState: EnquiryState = {};
@@ -50,6 +51,7 @@ export function EnquiryForm({
         placeholder={dict.common.messagePlaceholder}
         className="w-full rounded-lg border border-sand-300 bg-white px-3.5 py-2.5 text-sm text-ink-950 placeholder:text-sand-500 focus:border-ink-700 focus:outline-none focus:ring-2 focus:ring-ink-700/10"
       />
+      <Turnstile />
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? dict.common.sending : dict.common.sendEnquiry}
       </Button>

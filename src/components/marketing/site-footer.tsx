@@ -67,9 +67,19 @@ export async function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
           <Logo mark="dark" className="text-white" />
-          <p className="text-xs text-sand-400">
-            © {new Date().getFullYear()} Qasro.com. {dict.footer.demoDataNotice}
-          </p>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <div className="flex gap-4 text-xs text-sand-400">
+              <Link href="/terms" className="hover:text-white">
+                {dict.footer.terms}
+              </Link>
+              <Link href="/privacy" className="hover:text-white">
+                {dict.footer.privacy}
+              </Link>
+            </div>
+            <p className="text-xs text-sand-400">
+              © {new Date().getFullYear()} Qasro.com. {dict.footer.demoDataNotice}
+            </p>
+          </div>
         </div>
       </Container>
     </footer>

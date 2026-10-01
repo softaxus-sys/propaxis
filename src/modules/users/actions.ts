@@ -1,8 +1,11 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(2).max(120),
@@ -13,6 +16,16 @@ const registerSchema = z.object({
 export type RegisterState = { error?: string; success?: boolean };
 
 export async function registerUser(_prev: RegisterState, formData: FormData): Promise<RegisterState> {
+  const ip = (await headers()).get("x-forwarded-for") ?? "unknown";
+  const { ok } = await rateLimit(`register:${ip}`, 5, 60_000);
+  if (!ok) {
+    return { error: "Too many attempts — please wait a moment and try again." };
+  }
+
+  if (!(await verifyTurnstile(formData.get("cf-turnstile-response")))) {
+    return { error: "Verification failed — please try again." };
+  }
+
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),

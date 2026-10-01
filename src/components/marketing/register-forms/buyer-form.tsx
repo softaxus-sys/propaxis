@@ -5,6 +5,7 @@ import Link from "next/link";
 import { registerUser, type RegisterState } from "@/modules/users/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Turnstile } from "@/components/ui/turnstile";
 
 const initialState: RegisterState = {};
 
@@ -43,6 +44,7 @@ export function BuyerRegisterForm() {
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Password</label>
           <Input type="password" name="password" required placeholder="At least 8 characters" />
         </div>
+        <Turnstile />
         <Button type="submit" className="w-full" size="lg" disabled={pending}>
           {pending ? "Creating account…" : "Create account"}
         </Button>

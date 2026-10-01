@@ -34,6 +34,8 @@ export const ar: Dictionary = {
     about: "عن Qasro",
     vroduxForBusiness: "VRODUX للأعمال",
     contact: "تواصل معنا",
+    terms: "شروط الخدمة",
+    privacy: "سياسة الخصوصية",
     demoDataNotice:
       'البيانات العقارية المعلَّمة بـ"بيانات تجريبية" هي بيانات توضيحية فقط ولا تمثل عقارات أو معاملات حقيقية في الإمارات.',
   },

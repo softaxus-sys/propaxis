@@ -5,6 +5,7 @@ import Link from "next/link";
 import { registerAgent, type RegisterAgentState } from "@/modules/agents/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Turnstile } from "@/components/ui/turnstile";
 
 const initialState: RegisterAgentState = {};
 
@@ -82,6 +83,7 @@ export function AgentRegisterForm({ agencies }: { agencies: { id: string; name: 
             ))}
           </select>
         </div>
+        <Turnstile />
         <Button type="submit" className="w-full" size="lg" disabled={pending}>
           {pending ? "Submitting…" : "Submit application"}
         </Button>

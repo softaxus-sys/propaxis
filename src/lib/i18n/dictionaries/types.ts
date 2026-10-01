@@ -32,6 +32,8 @@ export type Dictionary = {
     about: string;
     vroduxForBusiness: string;
     contact: string;
+    terms: string;
+    privacy: string;
     demoDataNotice: string;
   };
   home: {

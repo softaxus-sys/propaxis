@@ -5,6 +5,7 @@ import Link from "next/link";
 import { registerAgency, type RegisterAgencyState } from "@/modules/agencies/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Turnstile } from "@/components/ui/turnstile";
 
 const initialState: RegisterAgencyState = {};
 
@@ -71,6 +72,7 @@ export function AgencyRegisterForm({
           <label className="mb-1.5 block text-sm font-medium text-ink-950">Phone (optional)</label>
           <Input type="tel" name="phone" placeholder="+971 4 XXX XXXX" />
         </div>
+        <Turnstile />
         <Button type="submit" className="w-full" size="lg" disabled={pending}>
           {pending ? "Submitting…" : "Register agency"}
         </Button>
