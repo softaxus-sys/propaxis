@@ -79,9 +79,17 @@ function getStorageClient(): S3Client | null {
 let cachedTenantId: string | null | undefined;
 
 /** The part of the S3 canonical owner id before the "$" — that's the prefix Contabo's
- * public URL path needs alongside the bucket name. Fetched once via GetBucketAcl and
- * cached for the life of the process. */
+ * public URL path needs alongside the bucket name.
+ *
+ * S3_TENANT_ID is an optional explicit override — skips the GetBucketAcl round-trip
+ * below entirely when set. Worth setting in production: the derived value is only
+ * cached for the lifetime of one serverless function instance, so on a platform that
+ * cold-starts often (this app is on Vercel Hobby), an unset env var means paying that
+ * extra API call again on every cold start, not just once ever. Left unset, it's
+ * derived automatically and still works correctly — just marginally slower on a cold
+ * upload. */
 async function getTenantId(client: S3Client): Promise<string | null> {
+  if (process.env.S3_TENANT_ID) return process.env.S3_TENANT_ID;
   if (cachedTenantId !== undefined) return cachedTenantId;
 
   try {
