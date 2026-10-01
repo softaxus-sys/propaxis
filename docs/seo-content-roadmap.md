@@ -14,6 +14,34 @@ researched, non-fabricated articles is a separate, ongoing editorial effort that
 a human source (market knowledge, actual UAE rental/mortgage rules, real developer
 data) this session doesn't have.
 
+## Update — Cluster 4's four P0 guides drafted
+
+Written directly into the database as `CmsPage` rows (`status: DRAFT`, `noindex: true`)
+rather than published outright — each one touches rules (DLD transfer fee, RERA rental
+index, Golden Visa thresholds, eviction notice periods) that are correct as long-standing,
+publicly documented DLD/RERA rules as of this writing, but **can be revised by those
+agencies** and deserve a quick human fact-check before going live, exactly the review
+step this roadmap already called for below. Each has an `editorialNotes` field saying
+the same thing, visible in the admin editor.
+
+- ✅ *(drafted, pending review)* [How to Buy Property in Dubai as a Foreigner](/guides/buy-property-dubai-foreigner)
+- ✅ *(drafted, pending review)* [Dubai Property Buying Process, Step by Step](/guides/dubai-buying-process)
+- ✅ *(drafted, pending review)* [Tenant Rights in Dubai: RERA Rental Law Explained](/guides/tenant-rights-dubai)
+- ✅ *(drafted, pending review)* [Dubai Property Transaction Costs & Fees Explained](/guides/dubai-property-fees)
+
+All four cross-link each other (the internal-linking structure that makes a "topical
+cluster" actually function for SEO, not just four unrelated pages). To publish: open
+each in `/admin/dashboard/content`, do the fact-check, turn off `noindex`, and hit
+Publish.
+
+**Cluster 3 (community/area guides) deliberately NOT drafted yet** — per this roadmap's
+own rule directly below, an area page should have real listing inventory before being
+promoted with rich content, and a live audit at the time of writing found only two
+areas with any real (non-demo) listings — "Business Bay" (1) and a generic "Dubai"
+catch-all (3) — neither strong enough yet to justify a full community guide without
+risking exactly the thin/empty-location-page problem this roadmap warns against. These
+should follow as real inventory grows per area, not be written ahead of it.
+
 Every page type listed has a working home to publish into: `ARTICLE` → `/guides/
 [slug]` (CMS, built this pass). Community/developer/agency/agent "pages" in clusters
 3, 7–11 below are mostly about **enriching existing pages** (`/areas/[slug]`,
