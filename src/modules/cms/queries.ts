@@ -55,3 +55,10 @@ export async function isSlugAvailable(slug: string, excludeId?: string): Promise
   const existing = await db.cmsPage.findUnique({ where: { slug }, select: { id: true } });
   return !existing || existing.id === excludeId;
 }
+
+/** Looks up a recorded redirect for an exact path (e.g. "/guides/old-slug") — see
+ * docs/seo-architecture.md §6. Call this before returning notFound() on any route
+ * whose path could have been recorded in the Redirect table. */
+export async function getRedirectFor(path: string) {
+  return db.redirect.findUnique({ where: { fromPath: path } });
+}

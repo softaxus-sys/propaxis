@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { Container } from "@/components/ui/container";
-import { getPublishedPageBySlug } from "@/modules/cms/queries";
+import { getPublishedPageBySlug, getRedirectFor } from "@/modules/cms/queries";
 import { renderCmsBody, plainTextExcerpt } from "@/modules/cms/render";
 
 const SITE_URL = "https://www.qasro.com";
@@ -36,7 +36,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = await getPublishedPageBySlug(slug, "ARTICLE");
-  if (!page) notFound();
+
+  if (!page) {
+    // A slug change on a previously-published page records a Redirect row
+    // (src/modules/cms/actions.ts) — check it before 404ing, per
+    // docs/seo-architecture.md §6 (this was a documented gap: redirects were recorded
+    // but nothing served them).
+    const redirectRow = await getRedirectFor(`/guides/${slug}`);
+    if (redirectRow) {
+      if (redirectRow.permanent) permanentRedirect(redirectRow.toPath);
+      redirect(redirectRow.toPath);
+    }
+    notFound();
+  }
 
   const html = renderCmsBody(page.body);
   const canonical = page.canonicalUrl || `https://www.qasro.com/guides/${page.slug}`;
