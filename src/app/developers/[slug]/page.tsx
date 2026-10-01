@@ -9,26 +9,34 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
+import { renderCmsBody } from "@/modules/cms/render";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const developer = await db.developer.findUnique({ where: { slug }, select: { name: true, description: true } });
+  const developer = await db.developer.findUnique({ where: { slug }, select: { name: true, description: true, cmsPage: true } });
   if (!developer) return {};
 
+  const cms = developer.cmsPage?.status === "PUBLISHED" ? developer.cmsPage : null;
+
   return {
-    title: `${developer.name} — Developer Profile`,
-    description: developer.description?.slice(0, 160) || `${developer.name} is a property developer active in the UAE. Browse their projects on Qasro.`,
-    alternates: { canonical: `https://www.qasro.com/developers/${slug}` },
+    title: cms?.seoTitle || `${developer.name} — Developer Profile`,
+    description:
+      cms?.seoDescription ||
+      developer.description?.slice(0, 160) ||
+      `${developer.name} is a property developer active in the UAE. Browse their projects on Qasro.`,
+    alternates: { canonical: cms?.canonicalUrl || `https://www.qasro.com/developers/${slug}` },
   };
 }
 
 export default async function DeveloperProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [developer, dict] = await Promise.all([
-    db.developer.findUnique({ where: { slug }, include: { projects: { include: { area: true } } } }),
+    db.developer.findUnique({ where: { slug }, include: { projects: { include: { area: true } }, cmsPage: true } }),
     getDictionary(),
   ]);
   if (!developer) notFound();
+
+  const cmsHtml = developer.cmsPage?.status === "PUBLISHED" ? renderCmsBody(developer.cmsPage.body) : null;
 
   return (
     <>
@@ -41,6 +49,17 @@ export default async function DeveloperProfilePage({ params }: { params: Promise
             {developer.isDemoData && <DemoDataBadge label={dict.common.demoData} />}
           </div>
           {developer.description && <p className="mt-2 max-w-2xl text-sm text-sand-600">{developer.description}</p>}
+
+          {cmsHtml && (
+            <div
+              className="mt-6 max-w-2xl space-y-4 text-sm leading-relaxed text-sand-700
+                [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink-950
+                [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-ink-950
+                [&_a]:text-bronze-600 [&_a]:underline [&_a]:underline-offset-4
+                [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_li]:mt-1"
+              dangerouslySetInnerHTML={{ __html: cmsHtml }}
+            />
+          )}
 
           <h2 className="mt-10 text-lg font-semibold capitalize text-ink-950">{dict.developers.projectsLabel}</h2>
           {developer.projects.length === 0 ? (

@@ -22,6 +22,9 @@ export async function getAgentBySlug(slug: string) {
         include: { property: { include: { area: true } } },
         orderBy: { publishedAt: "desc" },
       },
+      // Editor-authored long-form profile content, if linked and PUBLISHED — see
+      // docs/cms-specification.md §C.
+      cmsPage: true,
     },
   });
   return agent;

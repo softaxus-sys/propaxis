@@ -37,14 +37,47 @@ export async function getCmsPageById(id: string) {
       author: { select: { id: true, name: true } },
       reviewer: { select: { id: true, name: true } },
       revisions: { orderBy: { createdAt: "desc" }, include: { savedBy: { select: { name: true } } } },
-      area: { select: { id: true } }, // which Area (if any) currently links to this COMMUNITY page
+      // Whichever entity (if any) currently links to this page — only one of these
+      // will ever be non-null, matching the page's own `type`.
+      area: { select: { id: true } },
+      agency: { select: { id: true } },
+      agent: { select: { id: true } },
+      developer: { select: { id: true } },
     },
   });
 }
 
-/** For the COMMUNITY-type area picker in the CMS editor. */
+/** For the entity pickers (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/DEVELOPER_PROFILE) in
+ * the CMS editor — see docs/cms-specification.md §C. */
 export async function listAreasForLinking() {
   return db.area.findMany({ select: { id: true, name: true, city: true }, orderBy: { name: "asc" } });
+}
+export async function listAgenciesForLinking() {
+  return db.agency.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+}
+export async function listAgentsForLinking() {
+  return db.agent.findMany({ select: { id: true, user: { select: { name: true } } }, orderBy: { user: { name: "asc" } } });
+}
+export async function listDevelopersForLinking() {
+  return db.developer.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+}
+
+/** All four entity picker lists at once, pre-shaped for CmsPageForm's
+ * `entityOptionsByType` prop — the one call both admin content routes need. */
+export async function listEntityOptionsByType() {
+  const [areas, agencies, agents, developers] = await Promise.all([
+    listAreasForLinking(),
+    listAgenciesForLinking(),
+    listAgentsForLinking(),
+    listDevelopersForLinking(),
+  ]);
+
+  return {
+    COMMUNITY: areas.map((a) => ({ id: a.id, label: `${a.name}, ${a.city}` })),
+    AGENCY_PROFILE: agencies.map((a) => ({ id: a.id, label: a.name })),
+    AGENT_PROFILE: agents.map((a) => ({ id: a.id, label: a.user.name ?? "(unnamed agent)" })),
+    DEVELOPER_PROFILE: developers.map((d) => ({ id: d.id, label: d.name })),
+  };
 }
 
 export async function cmsDashboardCounts() {

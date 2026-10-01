@@ -11,19 +11,32 @@ const TYPES: CmsPage["type"][] = [
   "LANDING", "ARTICLE", "COMMUNITY", "BUILDING", "DEVELOPER_PROFILE", "PROJECT", "AGENCY_PROFILE", "AGENT_PROFILE",
 ];
 
+type EntityOption = { id: string; label: string };
+
+const ENTITY_PICKER: Partial<Record<CmsPage["type"], { label: string; publicPath: string }>> = {
+  COMMUNITY: { label: "Area", publicPath: "/areas/[slug]" },
+  AGENCY_PROFILE: { label: "Agency", publicPath: "/agencies/[slug]" },
+  AGENT_PROFILE: { label: "Agent", publicPath: "/agents/[slug]" },
+  DEVELOPER_PROFILE: { label: "Developer", publicPath: "/developers/[slug]" },
+};
+
 export function CmsPageForm({
   action,
   page,
-  areas,
-  currentAreaId,
+  entityOptionsByType,
+  currentEntityId,
 }: {
   action: (prev: CmsFormState, formData: FormData) => Promise<CmsFormState>;
   page?: CmsPage;
-  areas?: { id: string; name: string; city: string }[];
-  currentAreaId?: string;
+  /** One options list per linkable type — only the list matching the selected type is
+   * ever shown. See docs/cms-specification.md §C. */
+  entityOptionsByType?: Partial<Record<CmsPage["type"], EntityOption[]>>;
+  currentEntityId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {} as CmsFormState);
   const [type, setType] = useState<CmsPage["type"]>(page?.type ?? "ARTICLE");
+  const picker = ENTITY_PICKER[type];
+  const entityOptions = picker ? entityOptionsByType?.[type] : undefined;
 
   return (
     <form action={formAction} className="mt-6 grid gap-8 lg:grid-cols-3">
@@ -51,20 +64,20 @@ export function CmsPageForm({
           </p>
         </div>
 
-        {type === "COMMUNITY" && areas && (
+        {picker && entityOptions && (
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink-950">Area</label>
-            <select name="areaId" defaultValue={currentAreaId ?? ""} className="h-10 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm">
-              <option value="">— not linked to an area —</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}, {a.city}
+            <label className="mb-1.5 block text-sm font-medium text-ink-950">{picker.label}</label>
+            <select name="entityId" defaultValue={currentEntityId ?? ""} className="h-10 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm">
+              <option value="">— not linked —</option>
+              {entityOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-xs text-sand-500">
-              Once this page is PUBLISHED, its content renders on that area&apos;s own page
-              (/areas/[slug]) — see docs/cms-specification.md §C.
+              Once this page is PUBLISHED, its content renders on that {picker.label.toLowerCase()}&apos;s own page
+              ({picker.publicPath}) — see docs/cms-specification.md §C.
             </p>
           </div>
         )}
@@ -166,7 +179,9 @@ export function CmsPageForm({
           <div className="rounded-xl border border-sand-200 p-4">
             <h3 className="text-sm font-semibold text-ink-950">Search snippet preview</h3>
             <p className="mt-2 truncate text-base text-[#1a0dab]">{page?.seoTitle || page?.title}</p>
-            <p className="text-xs text-[#006621]">www.qasro.com/guides/{page?.slug}</p>
+            <p className="text-xs text-[#006621]">
+              {type === "ARTICLE" ? `www.qasro.com/guides/${page?.slug}` : `renders on the linked ${picker?.label.toLowerCase() ?? "page"}'s URL`}
+            </p>
             <p className="mt-1 line-clamp-2 text-sm text-sand-700">{page?.seoDescription || page?.excerpt}</p>
           </div>
         ) : null}

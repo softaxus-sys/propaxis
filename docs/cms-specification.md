@@ -46,30 +46,39 @@ Markdown too friction-y, but isn't a blocker for shipping real content today.
 
 `CmsPageType` enum: `LANDING`, `ARTICLE`, `COMMUNITY`, `BUILDING`, `DEVELOPER_PROFILE`,
 `PROJECT`, `AGENCY_PROFILE`, `AGENT_PROFILE`. ✅ `ARTICLE` is fully wired end to end
-(editor → workflow → public render at `/guides/[slug]`). ✅ `COMMUNITY` is now wired too
-(see below). 📋 The remaining five types exist in the schema (so wiring them up later is
-a routing/template + one-FK change, not a new migration pattern) but aren't publicly
-rendered yet.
+(editor → workflow → public render at `/guides/[slug]`). ✅ `COMMUNITY`, `AGENCY_PROFILE`,
+`AGENT_PROFILE`, and `DEVELOPER_PROFILE` are all wired the same way (see below). 📋
+`BUILDING` and `PROJECT` are the two not done — see the note at the end of this section
+for why `BUILDING` specifically can't follow this same pattern yet.
 
-**Why `COMMUNITY` is an enrichment, not a new URL — and how it's actually wired:** the
-brief itself says "do not create duplicate property, agent or agency records if
-equivalent entities already exist... integrate the CMS with the current source of
-truth." Qasro already has a real `Area` model with its own detail page (`/areas/
-[slug]`) backed by real relational data (listings, market metrics). A `COMMUNITY`-type
-`CmsPage` **enriches** that existing page rather than existing as a separate competing
-URL: `Area.cmsPageId` (nullable, unique FK) optionally points at one. Once that linked
-page is `PUBLISHED`, `/areas/[slug]` renders its Markdown body as long-form content
-(neighborhood guide copy, "what it's like to live here") alongside the existing
-stats/listings, and its `seoTitle`/`seoDescription`/`canonicalUrl` take priority over
-the mechanically-derived metadata the page already had. The admin editor shows an Area
-picker only when a page's type is `COMMUNITY`; linking, relinking to a different area,
-and unlinking are all handled (`syncAreaLink()` in `src/modules/cms/actions.ts`).
-Verified end-to-end with a real scripted test, not just assumed from the code.
+**How the enrichment types work — the brief says "do not create duplicate property,
+agent or agency records if equivalent entities already exist... integrate the CMS with
+the current source of truth."** Qasro already has real `Area`, `Agency`, `Agent`, and
+`Developer` models, each with its own detail page (`/areas/[slug]`, `/agencies/[slug]`,
+`/agents/[slug]`, `/developers/[slug]`) backed by real relational data. A linked CmsPage
+**enriches** the matching existing page rather than existing as a separate competing
+URL: each model has a `cmsPageId` (nullable, unique FK). Once that linked page is
+`PUBLISHED`, the page renders its Markdown body as long-form editor content alongside
+the model's existing real data, and the CmsPage's `seoTitle`/`seoDescription`/
+`canonicalUrl` take priority over the page's own mechanically-derived metadata. The
+admin editor shows the matching picker (Area/Agency/Agent/Developer) only for the
+matching type; linking, relinking to a different entity, and unlinking are all handled
+generically (`syncEntityLink()` in `src/modules/cms/actions.ts`, one explicit case per
+type rather than a dynamic-delegate abstraction — see that function's comment for why).
+Verified end-to-end with real scripted tests for all four types, not just assumed from
+the code, including confirming existing profile pages with no linked CMS content still
+render correctly (the common case, and the one most likely to silently break).
 
-**`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` follow the
-exact same pattern** (one nullable+unique FK on the respective model) but aren't built
-yet — deliberately sequenced one type at a time rather than all five at once, so each
-integration gets verified against its own real page rather than batched and rushed.
+**`BUILDING` doesn't have a public page to enrich at all** — there is no `/buildings/
+[slug]` route anywhere in this app today, unlike Area/Agency/Agent/Developer which all
+already had one. Wiring up `BUILDING`-type CMS content would mean building that page
+from scratch first, which is a genuinely different, larger task than "add one FK and a
+render block to an existing page" — flagged for a decision rather than silently
+skipped or built without being asked for.
+
+`PROJECT` is different from `BUILDING`: `/new-projects/[slug]` does exist already, so
+it's a real candidate for the exact same pattern as the four done here — just not done
+in this pass. Next in line if/when this gets picked back up.
 
 ## D. SEO fields
 

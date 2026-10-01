@@ -89,15 +89,22 @@ Still open, below, renumbered:
 
 1. **CMS roles are ADMIN-only.** The workflow states exist, but there's no separate
    Editor/Author/Reviewer access — see `cms-specification.md` §F for why this was
-   deliberately deferred rather than rushed. Still true; not attempted in the follow-up
-   pass either, since it has no value until a second real person needs content-only
-   access — say the word if that's now the case.
-2. **Media library doesn't exist** — CMS images are pasted URLs, not uploads. Blocked
-   on S3 credentials, which still aren't in `.env` as of this update (checked again).
+   deliberately deferred rather than rushed. Still true; no value until a second real
+   person needs content-only access — say the word if that's now the case.
+2. ~~Media library doesn't exist~~ — **Built.** Real upload (not pasted URLs) via
+   Contabo S3-compatible storage, wired into listing creation and the CMS editor's OG
+   image field. See the dedicated commits for the Contabo-specific URL-format fix this
+   needed.
 3. **No rich-text editor** — Markdown only (see `cms-specification.md` §B.1 for the
    reasoning). Fine for a technical editor, friction for a non-technical one.
-4. **`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT`** CMS
-   integration, following the `COMMUNITY` pattern above — not yet built.
+4. ~~`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` CMS
+   integration~~ — **`AGENCY_PROFILE`, `AGENT_PROFILE`, and `DEVELOPER_PROFILE` are now
+   built**, same pattern as `COMMUNITY`, verified end-to-end for each. Still open:
+   `BUILDING` (no public page exists to enrich at all — would need a new page built
+   first, not just this pattern) and `PROJECT` (a real page exists at
+   `/new-projects/[slug]`, just not wired up yet).
+5. **Listing photo editing** — upload only works at listing creation time; no flow yet
+   to add/remove/reorder photos on an existing listing.
 
 ## Manual setup steps required (things only you can do)
 

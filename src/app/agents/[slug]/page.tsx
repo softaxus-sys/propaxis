@@ -9,6 +9,7 @@ import { Container } from "@/components/ui/container";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { getAgentBySlug } from "@/modules/agents/queries";
 import { getDictionary } from "@/lib/i18n/server";
+import { renderCmsBody } from "@/modules/cms/render";
 
 /** Previously missing entirely — fell back to the site-wide default title/description. */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -16,12 +17,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const agent = await getAgentBySlug(slug);
   if (!agent) return {};
 
-  const title = `${agent.user.name} — Real Estate Agent${agent.agency ? ` at ${agent.agency.name}` : ""}`;
-  const description = `Contact ${agent.user.name}${agent.agency ? ` at ${agent.agency.name}` : ""}, a real estate agent on Qasro. View their active listings in the UAE.`;
+  const cms = agent.cmsPage?.status === "PUBLISHED" ? agent.cmsPage : null;
+  const title = cms?.seoTitle || `${agent.user.name} — Real Estate Agent${agent.agency ? ` at ${agent.agency.name}` : ""}`;
+  const description =
+    cms?.seoDescription ||
+    `Contact ${agent.user.name}${agent.agency ? ` at ${agent.agency.name}` : ""}, a real estate agent on Qasro. View their active listings in the UAE.`;
   return {
     title,
     description,
-    alternates: { canonical: `https://www.qasro.com/agents/${slug}` },
+    alternates: { canonical: cms?.canonicalUrl || `https://www.qasro.com/agents/${slug}` },
   };
 }
 
@@ -29,6 +33,8 @@ export default async function AgentProfilePage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const [agent, dict] = await Promise.all([getAgentBySlug(slug), getDictionary()]);
   if (!agent) notFound();
+
+  const cmsHtml = agent.cmsPage?.status === "PUBLISHED" ? renderCmsBody(agent.cmsPage.body) : null;
 
   return (
     <>
@@ -62,6 +68,17 @@ export default async function AgentProfilePage({ params }: { params: Promise<{ s
               </div>
 
               {agent.bio && <p className="max-w-2xl text-sm leading-relaxed text-sand-700">{agent.bio}</p>}
+
+              {cmsHtml && (
+                <div
+                  className="max-w-2xl space-y-4 text-sm leading-relaxed text-sand-700
+                    [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink-950
+                    [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-ink-950
+                    [&_a]:text-bronze-600 [&_a]:underline [&_a]:underline-offset-4
+                    [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_li]:mt-1"
+                  dangerouslySetInnerHTML={{ __html: cmsHtml }}
+                />
+              )}
 
               <h2 className="text-lg font-semibold text-ink-950">
                 {dict.agents.activeListings} ({agent.listings.length})

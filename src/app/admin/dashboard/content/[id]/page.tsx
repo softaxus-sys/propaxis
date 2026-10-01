@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/modules/auth/rbac";
-import { getCmsPageById, listAreasForLinking } from "@/modules/cms/queries";
+import { getCmsPageById, listEntityOptionsByType } from "@/modules/cms/queries";
 import {
   updateCmsPage,
   publishCmsPage,
@@ -31,8 +31,10 @@ export default async function EditCmsPagePage({ params }: { params: Promise<{ id
   if (!requireRole(session.user.role as never, ["ADMIN"])) redirect("/dashboard");
 
   const { id } = await params;
-  const [page, areas] = await Promise.all([getCmsPageById(id), listAreasForLinking()]);
+  const [page, entityOptionsByType] = await Promise.all([getCmsPageById(id), listEntityOptionsByType()]);
   if (!page) notFound();
+
+  const currentEntityId = page.area?.id ?? page.agency?.id ?? page.agent?.id ?? page.developer?.id;
 
   const updateAction = updateCmsPage.bind(null, id);
 
@@ -114,7 +116,7 @@ export default async function EditCmsPagePage({ params }: { params: Promise<{ id
         </span>
       </Card>
 
-      <CmsPageForm action={updateAction} page={page} areas={areas} currentAreaId={page.area?.id} />
+      <CmsPageForm action={updateAction} page={page} entityOptionsByType={entityOptionsByType} currentEntityId={currentEntityId} />
 
       <h2 className="mt-10 text-lg font-semibold text-ink-950">Revision history</h2>
       <Card className="mt-4 divide-y divide-sand-100">

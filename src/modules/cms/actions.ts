@@ -49,7 +49,10 @@ const pageFieldsSchema = z.object({
   ogDescription: z.string().max(200).optional(),
   ogImageUrl: z.string().url().optional().or(z.literal("")),
   editorialNotes: z.string().max(2000).optional(),
-  areaId: z.string().optional(), // only meaningful when type === COMMUNITY — see syncAreaLink
+  // Only meaningful for a linkable type (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/
+  // DEVELOPER_PROFILE) — see syncEntityLink. One generic field rather than one per
+  // type, since a page is only ever one type at a time.
+  entityId: z.string().optional(),
 });
 
 export type CmsFormState = { error?: string; success?: boolean; id?: string };
@@ -69,7 +72,7 @@ function readFields(formData: FormData) {
     ogDescription: formData.get("ogDescription") || undefined,
     ogImageUrl: formData.get("ogImageUrl") || undefined,
     editorialNotes: formData.get("editorialNotes") || undefined,
-    areaId: formData.get("areaId") || undefined,
+    entityId: formData.get("entityId") || undefined,
   });
 }
 
@@ -88,14 +91,15 @@ export async function createCmsPage(_prev: CmsFormState, formData: FormData): Pr
   const parsed = readFields(formData);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
 
-  const { slug: requestedSlug, canonicalUrl, ogImageUrl, areaId, ...rest } = parsed.data;
+  const { slug: requestedSlug, canonicalUrl, ogImageUrl, entityId, ...rest } = parsed.data;
   const slug = await uniqueSlug(slugify(requestedSlug || rest.title));
 
   const page = await db.cmsPage.create({
     data: { ...rest, slug, canonicalUrl: canonicalUrl || null, ogImageUrl: ogImageUrl || null, authorId: user.id },
   });
 
-  if (rest.type === "COMMUNITY") await syncAreaLink(page.id, areaId);
+  await syncEntityLink(rest.type, page.id, entityId);
+  revalidateLinkedPublicPaths(rest.type);
 
   await db.cmsPageRevision.create({
     data: { pageId: page.id, savedById: user.id, ...revisionSnapshot(page) },
@@ -109,16 +113,55 @@ export async function createCmsPage(_prev: CmsFormState, formData: FormData): Pr
   redirect(`/admin/dashboard/content/${page.id}`);
 }
 
-/** Keeps Area.cmsPageId in sync with the editor's selection for a COMMUNITY page —
- * the FK lives on Area (see docs/cms-specification.md §C), so linking/relinking/
- * unlinking from the CmsPage side means updating the Area row(s), not this page. */
-async function syncAreaLink(pageId: string, areaId: string | undefined): Promise<void> {
-  const currentlyLinked = await db.area.findFirst({ where: { cmsPageId: pageId } });
-  if (currentlyLinked && currentlyLinked.id !== areaId) {
-    await db.area.update({ where: { id: currentlyLinked.id }, data: { cmsPageId: null } });
+type LinkableType = "COMMUNITY" | "AGENCY_PROFILE" | "AGENT_PROFILE" | "DEVELOPER_PROFILE";
+
+/** Keeps the linked entity's cmsPageId in sync with the editor's selection — the FK
+ * always lives on the entity side (Area/Agency/Agent/Developer), not on CmsPage, so
+ * linking/relinking/unlinking means updating that row, not this page (see
+ * docs/cms-specification.md §C). One explicit case per type rather than a generic
+ * dynamic-delegate helper — each Prisma model's delegate has slightly different
+ * generated types, and four short, obviously-correct blocks are easier to trust than
+ * fighting that for an abstraction that only saves a few lines. */
+async function syncEntityLink(type: string, pageId: string, entityId: string | undefined): Promise<void> {
+  switch (type as LinkableType) {
+    case "COMMUNITY": {
+      const current = await db.area.findFirst({ where: { cmsPageId: pageId } });
+      if (current && current.id !== entityId) await db.area.update({ where: { id: current.id }, data: { cmsPageId: null } });
+      if (entityId && entityId !== current?.id) await db.area.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
+      return;
+    }
+    case "AGENCY_PROFILE": {
+      const current = await db.agency.findFirst({ where: { cmsPageId: pageId } });
+      if (current && current.id !== entityId) await db.agency.update({ where: { id: current.id }, data: { cmsPageId: null } });
+      if (entityId && entityId !== current?.id) await db.agency.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
+      return;
+    }
+    case "AGENT_PROFILE": {
+      const current = await db.agent.findFirst({ where: { cmsPageId: pageId } });
+      if (current && current.id !== entityId) await db.agent.update({ where: { id: current.id }, data: { cmsPageId: null } });
+      if (entityId && entityId !== current?.id) await db.agent.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
+      return;
+    }
+    case "DEVELOPER_PROFILE": {
+      const current = await db.developer.findFirst({ where: { cmsPageId: pageId } });
+      if (current && current.id !== entityId) await db.developer.update({ where: { id: current.id }, data: { cmsPageId: null } });
+      if (entityId && entityId !== current?.id) await db.developer.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
+      return;
+    }
   }
-  if (areaId && areaId !== currentlyLinked?.id) {
-    await db.area.update({ where: { id: areaId }, data: { cmsPageId: pageId } });
+}
+
+/** The enrichment types (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/DEVELOPER_PROFILE) each
+ * live on a DIFFERENT entity's own slug-based URL, not the CmsPage's own slug (unlike
+ * ARTICLE, which owns /guides/[slug] directly) — so there's one listing path to
+ * revalidate per type, not a single specific page path, since we don't know here
+ * which entity it's linked to without an extra query a cache revalidation doesn't need. */
+function revalidateLinkedPublicPaths(type: string): void {
+  switch (type as LinkableType) {
+    case "COMMUNITY": revalidatePath("/areas"); revalidatePath("/areas/[slug]", "page"); return;
+    case "AGENCY_PROFILE": revalidatePath("/agencies"); revalidatePath("/agencies/[slug]", "page"); return;
+    case "AGENT_PROFILE": revalidatePath("/agents"); revalidatePath("/agents/[slug]", "page"); return;
+    case "DEVELOPER_PROFILE": revalidatePath("/developers"); revalidatePath("/developers/[slug]", "page"); return;
   }
 }
 
@@ -130,7 +173,7 @@ export async function updateCmsPage(id: string, _prev: CmsFormState, formData: F
   const existing = await db.cmsPage.findUnique({ where: { id } });
   if (!existing) return { error: "Page not found." };
 
-  const { slug: requestedSlug, canonicalUrl, ogImageUrl, areaId, ...rest } = parsed.data;
+  const { slug: requestedSlug, canonicalUrl, ogImageUrl, entityId, ...rest } = parsed.data;
   let slug = existing.slug;
   if (requestedSlug && slugify(requestedSlug) !== existing.slug) {
     if (!(await isSlugAvailable(slugify(requestedSlug), id))) {
@@ -156,8 +199,8 @@ export async function updateCmsPage(id: string, _prev: CmsFormState, formData: F
     data: { ...rest, slug, canonicalUrl: canonicalUrl || null, ogImageUrl: ogImageUrl || null },
   });
 
-  if (updated.type === "COMMUNITY") await syncAreaLink(id, areaId);
-  revalidatePath("/areas"); // area pages can render linked CMS content now
+  await syncEntityLink(updated.type, id, entityId);
+  revalidateLinkedPublicPaths(updated.type);
 
   await db.auditLog.create({
     data: { userId: user.id, action: "cms_page.updated", entityType: "CmsPage", entityId: updated.id },

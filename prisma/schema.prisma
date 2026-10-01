@@ -265,6 +265,12 @@ model Agency {
   listings         Listing[]
   vroduxConnection VroduxConnection?
 
+  // Optional link to an AGENCY_PROFILE-type CmsPage holding editor-authored long-form
+  // content for this agency's public profile — same pattern as Area.cmsPageId, see
+  // docs/cms-specification.md §C.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
+
   @@index([slug])
   @@map("agencies")
 }
@@ -292,6 +298,11 @@ model Agent {
   leads    Lead[]
   viewings Viewing[] @relation("ViewingAgent")
 
+  // Optional link to an AGENT_PROFILE-type CmsPage — see Agency.cmsPageId above and
+  // docs/cms-specification.md §C.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
+
   @@index([agencyId])
   @@map("agents")
 }
@@ -313,6 +324,11 @@ model Developer {
   projects    Project[]
   buildings   Building[]
   teamMembers DeveloperTeamMember[]
+
+  // Optional link to a DEVELOPER_PROFILE-type CmsPage — see Agency.cmsPageId above and
+  // docs/cms-specification.md §C.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
 
   @@index([slug])
   @@map("developers")
@@ -1009,9 +1025,12 @@ model CmsPage {
   updatedAt DateTime @updatedAt
 
   revisions CmsPageRevision[]
-  // Back-relation for a COMMUNITY-type page linked from Area.cmsPageId — optional and
-  // only ever set from the Area side (see docs/cms-specification.md §C).
+  // Back-relations for a type-matched page linked from the other side (Area.cmsPageId,
+  // etc.) — optional, only ever set from that side, see docs/cms-specification.md §C.
   area      Area?
+  agency    Agency?
+  agent     Agent?
+  developer Developer?
 
   @@index([status])
   @@index([type])
