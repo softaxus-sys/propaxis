@@ -44,7 +44,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: "5. Cookies",
     body: [
-      "We use cookies for essential site functions (staying signed in, remembering your language preference) and, where enabled, basic analytics to understand how the platform is used.",
+      "We use cookies for essential site functions (staying signed in, remembering your language preference). Analytics cookies only run if you accept them in the cookie banner shown on your first visit — we don't load analytics beforehand, and you can decline without affecting how the platform works.",
     ],
   },
   {
