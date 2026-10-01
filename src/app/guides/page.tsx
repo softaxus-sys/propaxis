@@ -15,7 +15,7 @@ export default async function GuidesIndexPage() {
   const guides = await db.cmsPage.findMany({
     where: { type: "ARTICLE", status: "PUBLISHED" },
     orderBy: { publishedAt: "desc" },
-    select: { slug: true, title: true, excerpt: true, publishedAt: true },
+    select: { slug: true, title: true, excerpt: true, publishedAt: true, ogImageUrl: true },
   });
 
   return (
@@ -34,9 +34,19 @@ export default async function GuidesIndexPage() {
             <div className="mt-8 space-y-4">
               {guides.map((g) => (
                 <Link key={g.slug} href={`/guides/${g.slug}`}>
-                  <Card className="p-5 hover:shadow-md">
-                    <h2 className="font-semibold text-ink-950">{g.title}</h2>
-                    {g.excerpt && <p className="mt-1 text-sm text-sand-600">{g.excerpt}</p>}
+                  <Card className="flex gap-4 p-5 hover:shadow-md">
+                    {g.ogImageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- external, user-uploaded image (Contabo)
+                      <img
+                        src={g.ogImageUrl}
+                        alt=""
+                        className="h-20 w-28 shrink-0 rounded-lg object-cover sm:h-24 sm:w-36"
+                      />
+                    )}
+                    <div>
+                      <h2 className="font-semibold text-ink-950">{g.title}</h2>
+                      {g.excerpt && <p className="mt-1 text-sm text-sand-600">{g.excerpt}</p>}
+                    </div>
                   </Card>
                 </Link>
               ))}

@@ -91,6 +91,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             </Link>
           </nav>
 
+          {page.ogImageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- external, user-uploaded image (Contabo), not a static/local asset
+            <img
+              src={page.ogImageUrl}
+              alt={page.title}
+              className="mt-4 aspect-[2/1] w-full rounded-2xl object-cover"
+            />
+          )}
+
           <h1 className="mt-4 text-2xl font-semibold text-ink-950">{page.title}</h1>
           {page.excerpt && <p className="mt-2 text-sm text-sand-600">{page.excerpt}</p>}
           <p className="mt-2 text-xs text-sand-500">
