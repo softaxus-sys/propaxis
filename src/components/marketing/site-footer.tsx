@@ -77,7 +77,13 @@ export async function SiteFooter() {
                 {dict.footer.privacy}
               </Link>
             </div>
-            <p className="text-xs text-sand-400">© {new Date().getFullYear()} Qasro.com.</p>
+            <p className="text-xs text-sand-400">
+              © {new Date().getFullYear()} Qasro.com. A product of{" "}
+              <a href="https://softaxis.ae" target="_blank" rel="noopener noreferrer" className="hover:text-white">
+                Soft Axis Technologies
+              </a>
+              .
+            </p>
           </div>
         </div>
       </Container>
