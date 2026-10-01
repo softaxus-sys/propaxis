@@ -5,7 +5,11 @@ import { InvestmentCalculatorForm } from "@/components/marketing/investment-calc
 import { Container } from "@/components/ui/container";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Investment Calculator" };
+export const metadata: Metadata = {
+  title: "Property Investment Calculator — UAE",
+  description: "Estimate rental yield and return on investment for a UAE property purchase with Qasro's investment calculator.",
+  alternates: { canonical: "https://www.qasro.com/investment-calculator" },
+};
 
 export default async function InvestmentCalculatorPage() {
   const dict = await getDictionary();

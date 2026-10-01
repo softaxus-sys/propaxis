@@ -8,7 +8,11 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Agencies" };
+export const metadata: Metadata = {
+  title: "Real Estate Agencies in the UAE",
+  description: "Browse verified real estate agencies across Dubai and the UAE on Qasro and explore their active listings.",
+  alternates: { canonical: "https://www.qasro.com/agencies" },
+};
 
 export default async function AgenciesPage() {
   const [agencies, dict] = await Promise.all([

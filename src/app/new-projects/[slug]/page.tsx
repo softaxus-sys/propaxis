@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -9,6 +10,24 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const project = await db.project.findUnique({
+    where: { slug },
+    include: { area: true, developer: true },
+  });
+  if (!project) return {};
+
+  const priceText = project.startingPriceAed ? ` from ${formatAed(Number(project.startingPriceAed), { compact: true })}` : "";
+  return {
+    title: `${project.name} by ${project.developer.name} — ${project.area.name}`,
+    description:
+      project.description?.slice(0, 160) ||
+      `${project.name} is an off-plan project by ${project.developer.name} in ${project.area.name}${priceText}. View units and payment plan on Qasro.`,
+    alternates: { canonical: `https://www.qasro.com/new-projects/${slug}` },
+  };
+}
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

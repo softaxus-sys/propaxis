@@ -18,13 +18,31 @@ const notoKufiArabic = Noto_Kufi_Arabic({
   display: "swap",
 });
 
+const SITE_URL = "https://www.qasro.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Qasro.com — The Home Of Palaces",
     template: "%s | Qasro.com",
   },
   description:
     "Qasro is the UAE's AI-powered real estate marketplace and intelligence platform — search, understand, compare and connect across Dubai and the UAE.",
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Qasro",
+  url: SITE_URL,
+  logo: `${SITE_URL}/qasro-logo.png`,
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Qasro.com",
+  url: SITE_URL,
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -44,6 +62,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         src="https://erp.vrodux.com/api/seo/snippet/f9b8624be5bb71ee6c180c3a145a822a2b142595/tag.js"
         strategy="afterInteractive"
       />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
     </html>
   );
 }

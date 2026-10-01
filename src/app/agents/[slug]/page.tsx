@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -8,6 +9,21 @@ import { Container } from "@/components/ui/container";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { getAgentBySlug } from "@/modules/agents/queries";
 import { getDictionary } from "@/lib/i18n/server";
+
+/** Previously missing entirely — fell back to the site-wide default title/description. */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const agent = await getAgentBySlug(slug);
+  if (!agent) return {};
+
+  const title = `${agent.user.name} — Real Estate Agent${agent.agency ? ` at ${agent.agency.name}` : ""}`;
+  const description = `Contact ${agent.user.name}${agent.agency ? ` at ${agent.agency.name}` : ""}, a real estate agent on Qasro. View their active listings in the UAE.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `https://www.qasro.com/agents/${slug}` },
+  };
+}
 
 export default async function AgentProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

@@ -7,7 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "For Professionals" };
+export const metadata: Metadata = {
+  title: "For Real Estate Professionals",
+  description:
+    "Agents, agencies and developers: list properties, manage leads and connect your VRODUX CRM on Qasro, the UAE's AI-powered real estate marketplace.",
+  alternates: { canonical: "https://www.qasro.com/for-professionals" },
+};
 
 const SECTIONS = [
   {

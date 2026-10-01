@@ -5,7 +5,11 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "VRODUX for business" };
+export const metadata: Metadata = {
+  title: "VRODUX CRM for Real Estate Agencies",
+  description: "Connect your Vrodux CRM/ERP tenant to Qasro to manage leads, opportunities and deals from your listings in one place.",
+  alternates: { canonical: "https://www.qasro.com/vrodux" },
+};
 
 const PRODUCTS = [
   { name: "VRODUX CRM", description: "Leads, viewings, opportunities and deals — synced straight from your Qasro listings." },

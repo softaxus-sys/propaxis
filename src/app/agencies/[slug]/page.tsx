@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -8,6 +9,18 @@ import { Card } from "@/components/ui/card";
 import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const agency = await db.agency.findUnique({ where: { slug }, select: { name: true, description: true } });
+  if (!agency) return {};
+
+  return {
+    title: `${agency.name} — Real Estate Agency`,
+    description: agency.description?.slice(0, 160) || `${agency.name} is a real estate agency on Qasro. Browse their active listings in the UAE.`,
+    alternates: { canonical: `https://www.qasro.com/agencies/${slug}` },
+  };
+}
 
 export default async function AgencyProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

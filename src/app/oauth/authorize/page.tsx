@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { requireRole } from "@/modules/auth/rbac";
 import { isRegisteredRedirectUri, appendOAuthParams } from "@/modules/vrodux-integration/oauth";
 import { approveVroduxConnection, denyVroduxConnection } from "@/modules/vrodux-integration/oauth-actions";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * The one and only screen a human sees in the Vrodux↔Qasro OAuth flow — everything

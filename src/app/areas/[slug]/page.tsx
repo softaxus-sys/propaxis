@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -9,6 +10,27 @@ import { DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getAreaBySlug } from "@/modules/areas/queries";
 import { getDictionary } from "@/lib/i18n/server";
+
+/** Description is derived from the area's real listing count, not a fixed template —
+ * see docs/seo-architecture.md on avoiding "thin" identical location pages. A
+ * zero-listing area is a real content gap, not something to paper over with copy. */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const result = await getAreaBySlug(slug);
+  if (!result) return {};
+
+  const { area, listings } = result;
+  const description =
+    listings.length > 0
+      ? `${listings.length} propert${listings.length === 1 ? "y" : "ies"} for sale and rent in ${area.name}, ${area.city} — prices, photos and market trends on Qasro.`
+      : `Explore ${area.name}, ${area.city} on Qasro — market trends and upcoming listings.`;
+
+  return {
+    title: `Properties in ${area.name}, ${area.city}`,
+    description,
+    alternates: { canonical: `https://www.qasro.com/areas/${slug}` },
+  };
+}
 
 export default async function AreaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

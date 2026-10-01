@@ -10,7 +10,11 @@ import { formatAed } from "@/lib/utils";
 import { listAreas } from "@/modules/areas/queries";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Market Insights" };
+export const metadata: Metadata = {
+  title: "UAE Property Market Insights",
+  description: "Price trends, rental yields and market data across Dubai and the UAE's property market, on Qasro.",
+  alternates: { canonical: "https://www.qasro.com/insights" },
+};
 
 export default async function InsightsPage() {
   const [areas, dict] = await Promise.all([listAreas(), getDictionary()]);

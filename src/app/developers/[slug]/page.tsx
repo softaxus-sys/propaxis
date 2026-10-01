@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -8,6 +9,18 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const developer = await db.developer.findUnique({ where: { slug }, select: { name: true, description: true } });
+  if (!developer) return {};
+
+  return {
+    title: `${developer.name} — Developer Profile`,
+    description: developer.description?.slice(0, 160) || `${developer.name} is a property developer active in the UAE. Browse their projects on Qasro.`,
+    alternates: { canonical: `https://www.qasro.com/developers/${slug}` },
+  };
+}
 
 export default async function DeveloperProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

@@ -9,7 +9,11 @@ import { formatAed } from "@/lib/utils";
 import { listAreas } from "@/modules/areas/queries";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Areas" };
+export const metadata: Metadata = {
+  title: "Explore Areas & Communities in the UAE",
+  description: "Price trends and inventory across Dubai's top communities and neighborhoods, on Qasro.",
+  alternates: { canonical: "https://www.qasro.com/areas" },
+};
 
 export default async function AreasPage() {
   const [areas, dict] = await Promise.all([listAreas(), getDictionary()]);

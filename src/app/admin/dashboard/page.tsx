@@ -5,17 +5,22 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { requireRole } from "@/modules/auth/rbac";
 import { reviewVerification, reviewAgentVerification, reviewAgencyVerification } from "@/modules/verification/actions";
+import { cmsDashboardCounts } from "@/modules/cms/queries";
 
-const NAV = [{ href: "/admin/dashboard", label: "Overview" }];
+const NAV = [
+  { href: "/admin/dashboard", label: "Overview" },
+  { href: "/admin/dashboard/content", label: "Content" },
+];
 
 export default async function AdminDashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (!requireRole(session.user.role as never, ["ADMIN"])) redirect("/dashboard");
 
-  const [userCount, listingCount, leadCount, pendingAgents, pendingAgencies, pendingVerifications, recentAuditLogs] =
+  const [userCount, listingCount, leadCount, pendingAgents, pendingAgencies, pendingVerifications, recentAuditLogs, cmsCounts] =
     await Promise.all([
       db.user.count(),
       db.listing.count(),
@@ -36,6 +41,7 @@ export default async function AdminDashboardPage() {
         take: 20,
       }),
       db.auditLog.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 15 }),
+      cmsDashboardCounts(),
     ]);
 
   return (
@@ -54,6 +60,31 @@ export default async function AdminDashboardPage() {
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-sand-500">Leads</p>
           <p className="mt-1 text-xl font-semibold text-ink-950">{leadCount}</p>
+        </Card>
+      </div>
+
+      <h2 className="mt-10 flex items-center justify-between text-lg font-semibold text-ink-950">
+        Content
+        <Link href="/admin/dashboard/content" className="text-sm font-medium text-bronze-600 hover:text-bronze-500">
+          Manage content →
+        </Link>
+      </h2>
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-sand-500">Draft</p>
+          <p className="mt-1 text-xl font-semibold text-ink-950">{cmsCounts.draft}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-sand-500">In review</p>
+          <p className="mt-1 text-xl font-semibold text-ink-950">{cmsCounts.inReview}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-sand-500">Scheduled</p>
+          <p className="mt-1 text-xl font-semibold text-ink-950">{cmsCounts.scheduled}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-sand-500">Published</p>
+          <p className="mt-1 text-xl font-semibold text-ink-950">{cmsCounts.published}</p>
         </Card>
       </div>
 

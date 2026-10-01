@@ -6,7 +6,12 @@ import { Container } from "@/components/ui/container";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Commercial" };
+export const metadata: Metadata = {
+  title: "Commercial Properties in the UAE",
+  description:
+    "Offices, retail units and warehouses for sale and rent across Dubai and the UAE on Qasro — commercial real estate for businesses and investors.",
+  alternates: { canonical: "https://www.qasro.com/commercial" },
+};
 
 export default async function CommercialPage() {
   const [listings, dict] = await Promise.all([

@@ -163,6 +163,10 @@ model User {
   aiConversations AIConversation[]
   auditLogs       AuditLog[]
 
+  cmsPagesAuthored  CmsPage[]         @relation("CmsPageAuthor")
+  cmsPagesReviewed  CmsPage[]         @relation("CmsPageReviewer")
+  cmsRevisionsSaved CmsPageRevision[]
+
   @@index([role])
   @@map("users")
 }
@@ -930,6 +934,118 @@ model AIConversation {
 
   @@index([userId])
   @@map("ai_conversations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CMS — editorial content (landing pages, guides, future community/developer/
+// agency/agent profile copy). Phase 1 of docs/cms-specification.md: the data model
+// and a working editorial workflow for ARTICLE-type pages (public at /guides/[slug]).
+// Other types are modeled now so the schema doesn't need to change later, but their
+// public rendering isn't wired up yet — see the spec doc for what's phased in when.
+// Gated entirely behind the existing ADMIN role for now; EDITOR/AUTHOR/REVIEWER are
+// a planned Role enum extension once more than one person needs access (see spec §F).
+// ─────────────────────────────────────────────────────────────────────────
+
+enum CmsPageType {
+  LANDING
+  ARTICLE
+  COMMUNITY
+  BUILDING
+  DEVELOPER_PROFILE
+  PROJECT
+  AGENCY_PROFILE
+  AGENT_PROFILE
+}
+
+enum CmsPageStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model CmsPage {
+  id   String      @id @default(cuid())
+  type CmsPageType @default(ARTICLE)
+  slug String      @unique
+
+  title   String
+  excerpt String? @db.Text
+  // Markdown, not HTML — rendered + sanitized at request time (src/modules/cms/render.ts),
+  // never stored pre-rendered, so a sanitizer fix applies retroactively to old content too.
+  body String @db.Text
+
+  status      CmsPageStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+
+  authorId       String?
+  author         User?   @relation("CmsPageAuthor", fields: [authorId], references: [id])
+  reviewerId     String?
+  reviewer       User?   @relation("CmsPageReviewer", fields: [reviewerId], references: [id])
+  editorialNotes String? @db.Text
+
+  // SEO fields — see docs/cms-specification.md §D. noindex defaults true: a new page
+  // is only indexable once an editor explicitly opts it in, not by forgetting a checkbox.
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  noindex        Boolean @default(true)
+  ogTitle        String?
+  ogDescription  String?
+  ogImageUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  revisions CmsPageRevision[]
+
+  @@index([status])
+  @@index([type])
+  @@map("cms_pages")
+}
+
+/** Full snapshot per save (not a diff) — simpler to restore correctly, and the content
+ * volume here is small enough that storage efficiency isn't a real concern. */
+model CmsPageRevision {
+  id     String  @id @default(cuid())
+  pageId String
+  page   CmsPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  title          String
+  excerpt        String? @db.Text
+  body           String  @db.Text
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
+  noindex        Boolean
+  ogTitle        String?
+  ogDescription  String?
+  ogImageUrl     String?
+
+  savedById String?
+  savedBy   User?   @relation(fields: [savedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([pageId, createdAt])
+  @@map("cms_page_revisions")
+}
+
+/** Slug/URL changes go through here rather than silently 404ing — see
+ * docs/seo-architecture.md's indexation policy. `fromPath`/`toPath` are paths
+ * (`/old-slug`), not full URLs. */
+model Redirect {
+  id        String  @id @default(cuid())
+  fromPath  String  @unique
+  toPath    String
+  permanent Boolean @default(true) // true = 308, false = 307
+
+  createdAt DateTime @default(now())
+
+  @@map("redirects")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

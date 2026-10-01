@@ -6,7 +6,11 @@ import { Container } from "@/components/ui/container";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Property Valuation" };
+export const metadata: Metadata = {
+  title: "Free Property Valuation — UAE",
+  description: "Get an estimated valuation range for your UAE property, grounded in real transaction and market data on Qasro.",
+  alternates: { canonical: "https://www.qasro.com/valuation" },
+};
 
 export default async function ValuationPage() {
   const [areas, dict] = await Promise.all([db.area.findMany({ orderBy: { name: "asc" } }), getDictionary()]);

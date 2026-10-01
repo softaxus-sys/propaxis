@@ -9,7 +9,11 @@ import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "New Projects" };
+export const metadata: Metadata = {
+  title: "Off-Plan & New Projects in the UAE",
+  description: "Browse off-plan and new-launch property projects from developers across Dubai and the UAE on Qasro.",
+  alternates: { canonical: "https://www.qasro.com/new-projects" },
+};
 
 const STATUS_LABEL: Record<string, string> = {
   ANNOUNCED: "Announced",

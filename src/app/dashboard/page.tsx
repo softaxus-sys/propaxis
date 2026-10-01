@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -5,6 +6,8 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 const ROLE_REDIRECT: Record<string, string> = {
   AGENT: "/agent/dashboard",

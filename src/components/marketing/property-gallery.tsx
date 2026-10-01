@@ -78,6 +78,13 @@ export function PropertyGallery({
             : undefined
         }
       >
+        {hero && (
+          // CSS background-image (needed for the gradient-overlay styling) has no alt
+          // text and isn't crawlable by Google Images on its own — this sr-only <img>
+          // carries the real description without changing how the hero looks.
+          // eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photo
+          <img src={hero} alt={alt} className="sr-only" />
+        )}
         {children}
         {hero && (
           <span className="absolute bottom-4 end-4 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
@@ -97,7 +104,12 @@ export function PropertyGallery({
               aria-label={`View photo ${i + 2} of ${images.length}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photos (agency uploads, Vrodux-synced signed URLs); see docs/ARCHITECTURE.md §7.2 */}
-              <img src={url} alt="" className="h-full w-full object-cover transition hover:opacity-80" loading="lazy" />
+              <img
+                src={url}
+                alt={`${alt} — photo ${i + 2} of ${images.length}`}
+                className="h-full w-full object-cover transition hover:opacity-80"
+                loading="lazy"
+              />
             </button>
           ))}
         </div>

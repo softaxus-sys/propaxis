@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { BedDouble, Bath, Ruler, ShieldCheck, TrendingUp } from "lucide-react";
@@ -11,6 +12,44 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getPropertyPassport } from "@/modules/properties/passport";
 import { getDictionary } from "@/lib/i18n/server";
+
+const SITE_URL = "https://www.qasro.com";
+
+/** Previously missing entirely — every property page fell back to the site-wide
+ * default title/description (verified live, see docs/seo-audit.md). */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const passport = await getPropertyPassport(id);
+  if (!passport) return {};
+
+  const { listing } = passport;
+  const { property } = listing;
+  const priceText =
+    listing.type === "SALE"
+      ? formatAed(Number(listing.askingPriceAed ?? 0), { compact: true })
+      : `${formatAed(Number(listing.askingRentAedYear ?? 0), { compact: true })}/yr`;
+  const verb = listing.type === "SALE" ? "for sale" : "for rent";
+  const bedroomsText = property.bedrooms ? `${property.bedrooms}BR ` : "";
+
+  const title = `${listing.title} — ${bedroomsText}${verb} in ${property.area.name} | ${priceText}`;
+  const description =
+    listing.description?.slice(0, 157) ||
+    `${bedroomsText}${property.type.toLowerCase()} ${verb} in ${property.area.name}, Dubai — ${priceText}. View photos, price and details on Qasro.`;
+  const canonical = `${SITE_URL}/property/${id}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+      images: listing.images[0] ? [listing.images[0]] : undefined,
+    },
+  };
+}
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -213,6 +252,49 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         </Container>
       </main>
       <SiteFooter />
+
+      {/* Only real, DB-backed fields — no invented ratings/reviews/availability.
+          schema.org/RealEstateListing has no dedicated Google rich-result UI today,
+          but it's valid structured data and costs nothing to include correctly. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "RealEstateListing",
+            name: listing.title,
+            description: listing.description || undefined,
+            url: `${SITE_URL}/property/${listing.id}`,
+            image: listing.images[0] || undefined,
+            datePosted: listing.publishedAt?.toISOString(),
+            ...(listing.type === "SALE"
+              ? { offers: { "@type": "Offer", price: listing.askingPriceAed?.toString(), priceCurrency: "AED" } }
+              : listing.askingRentAedYear
+                ? { offers: { "@type": "Offer", price: listing.askingRentAedYear.toString(), priceCurrency: "AED" } }
+                : {}),
+            address: { "@type": "PostalAddress", addressLocality: property.area.name, addressCountry: "AE" },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: listing.type === "SALE" ? "Buy" : "Rent",
+                item: `${SITE_URL}${listing.type === "SALE" ? "/buy" : "/rent"}`,
+              },
+              { "@type": "ListItem", position: 3, name: listing.title, item: `${SITE_URL}/property/${listing.id}` },
+            ],
+          }),
+        }}
+      />
     </>
   );
 }
