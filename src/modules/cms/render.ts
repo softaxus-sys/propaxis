@@ -3,23 +3,35 @@
  * (never pre-rendered/cached as HTML in the DB) — so a sanitizer fix or a markdown
  * rendering change applies to all existing content immediately, not just new saves.
  * Authors are ADMIN-only today (see docs/cms-specification.md §F), but content still
- * goes through DOMPurify before reaching the page — defense in depth, not "trusted
+ * goes through a sanitizer before reaching the page — defense in depth, not "trusted
  * input," since that's the correct default for anything rendered as HTML.
+ *
+ * Using `sanitize-html`, not `isomorphic-dompurify` — the latter pulls in jsdom (it
+ * needs a DOM to run DOMPurify's real browser implementation against in Node), and
+ * jsdom's own dependency chain broke in production on Vercel with an ESM/CJS interop
+ * error (`html-encoding-sniffer` requiring an ESM-only package) that didn't reproduce
+ * locally at all — a dynamic route only actually executes at request time, so `next
+ * build` passing never caught it. `sanitize-html` does pure string-level sanitization
+ * with no DOM/jsdom dependency, which is both lighter and removes that entire class of
+ * bundler/runtime incompatibility for a purely server-side use case like this one.
  */
 import { marked } from "marked";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 marked.setOptions({ gfm: true, breaks: false });
 
+const ALLOWED_TAGS = [
+  "h2", "h3", "h4", "p", "a", "ul", "ol", "li", "strong", "em", "blockquote",
+  "code", "pre", "table", "thead", "tbody", "tr", "th", "td", "img", "figure",
+  "figcaption", "hr", "br",
+];
+const ALLOWED_ATTRS = ["href", "src", "alt", "title", "target", "rel"];
+
 export function renderCmsBody(markdown: string): string {
   const rawHtml = marked.parse(markdown, { async: false }) as string;
-  return DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
-      "h2", "h3", "h4", "p", "a", "ul", "ol", "li", "strong", "em", "blockquote",
-      "code", "pre", "table", "thead", "tbody", "tr", "th", "td", "img", "figure",
-      "figcaption", "hr", "br",
-    ],
-    ALLOWED_ATTR: ["href", "src", "alt", "title", "target", "rel"],
+  return sanitizeHtml(rawHtml, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: { "*": ALLOWED_ATTRS },
   });
 }
 
