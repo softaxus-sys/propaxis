@@ -65,27 +65,39 @@ What I did **not** run: no Lighthouse/PageSpeed pass, no accessibility scanner, 
 Search Console validation of the new structured data (that requires the live deploy to
 be picked up by Google's tools first — see "first actions" below).
 
-## Outstanding issues (honest list, not buried)
+## Update — follow-up pass (same day)
 
-1. **`Redirect` rows aren't served yet.** The data model and the automatic-recording-
-   on-slug-change logic are built and working, but nothing currently reads that table
-   to actually issue a 308 for an old URL — a visitor hitting a stale guide URL today
-   gets a 404, not a redirect. See `seo-architecture.md` §6. This is the single most
-   important functional gap to close next.
-2. **CMS roles are ADMIN-only.** The workflow states exist, but there's no separate
+Four items from the list below were closed in a second pass, each verified with a real
+scripted test, not just a clean build:
+
+- ~~`Redirect` rows aren't served~~ — **Fixed.** `/guides/[slug]` now checks
+  `getRedirectFor()` before `notFound()`. Verified by publishing a page, renaming its
+  slug, and confirming the old URL's data resolves to the recorded redirect — then
+  reverted the test state.
+- ~~`next` critical RCE advisory~~ — **Fixed.** Patched 16.3.5 → 16.3.8 (patch-only,
+  not a major bump). `npm audit` now reports 3 high (pre-existing, unrelated Prisma
+  tooling advisories) instead of 3 high + 1 critical.
+- ~~Only `ARTICLE` renders publicly~~ — **`COMMUNITY` now also wired.** `Area.cmsPageId`
+  links an area to a `COMMUNITY` page; once published, it renders on `/areas/[slug]`
+  and its SEO fields take priority. Verified by linking a real test page to Dubai
+  Marina, confirming it rendered, then fully cleaning up. `BUILDING`/
+  `DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` still follow — same
+  pattern, not yet built, sequenced deliberately one at a time (see
+  `cms-specification.md` §C).
+
+Still open, below, renumbered:
+
+1. **CMS roles are ADMIN-only.** The workflow states exist, but there's no separate
    Editor/Author/Reviewer access — see `cms-specification.md` §F for why this was
-   deliberately deferred rather than rushed.
-3. **Media library doesn't exist** — CMS images are pasted URLs, not uploads. Depends
-   on the pre-existing (unrelated to this pass) gap that S3 was never wired up anywhere
-   in the app.
-4. **Only `ARTICLE` content type renders publicly.** `COMMUNITY`/`BUILDING`/
-   `DEVELOPER_PROFILE`/etc. exist in the schema but need the `cmsPageId`-on-existing-
-   model integration described in `cms-specification.md` §C before they're useful.
-5. **`next` has a critical RCE advisory** in this project's dependency tree (`npm
-   audit`), unrelated to anything changed in this pass. Needs its own upgrade pass —
-   flagging it here so it doesn't get lost.
-6. **No rich-text editor** — Markdown only (see `cms-specification.md` §B.1 for the
+   deliberately deferred rather than rushed. Still true; not attempted in the follow-up
+   pass either, since it has no value until a second real person needs content-only
+   access — say the word if that's now the case.
+2. **Media library doesn't exist** — CMS images are pasted URLs, not uploads. Blocked
+   on S3 credentials, which still aren't in `.env` as of this update (checked again).
+3. **No rich-text editor** — Markdown only (see `cms-specification.md` §B.1 for the
    reasoning). Fine for a technical editor, friction for a non-technical one.
+4. **`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT`** CMS
+   integration, following the `COMMUNITY` pattern above — not yet built.
 
 ## Manual setup steps required (things only you can do)
 
@@ -127,5 +139,5 @@ be picked up by Google's tools first — see "first actions" below).
    publish them. This is the actual bottleneck going forward: the system to publish
    content now exists and works; writing accurate, non-fabricated content is a
    standing editorial job, not a one-time task.
-4. Revisit item 1 in "Outstanding issues" (redirect serving) before any guide's slug
-   ever needs to change in production.
+4. Redirect serving is now fixed (see the update above) — no action needed here
+   anymore, kept for history.

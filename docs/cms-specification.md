@@ -46,25 +46,30 @@ Markdown too friction-y, but isn't a blocker for shipping real content today.
 
 `CmsPageType` enum: `LANDING`, `ARTICLE`, `COMMUNITY`, `BUILDING`, `DEVELOPER_PROFILE`,
 `PROJECT`, `AGENCY_PROFILE`, `AGENT_PROFILE`. ✅ `ARTICLE` is fully wired end to end
-(editor → workflow → public render at `/guides/[slug]`). 📋 The other six types exist
-in the schema (so adding their public rendering later is a routing/template change, not
-a migration) but aren't publicly rendered yet.
+(editor → workflow → public render at `/guides/[slug]`). ✅ `COMMUNITY` is now wired too
+(see below). 📋 The remaining five types exist in the schema (so wiring them up later is
+a routing/template + one-FK change, not a new migration pattern) but aren't publicly
+rendered yet.
 
-**Why the other types aren't wired up yet, specifically:** the brief itself says "do
-not create duplicate property, agent or agency records if equivalent entities already
-exist... integrate the CMS with the current source of truth." Qasro already has real
-`Area`, `Building`, `Developer`, `Agency`, `Agent` models with their own detail pages
-(`/areas/[slug]`, `/developers/[slug]`, etc.) backed by real relational data (listings,
-verification status, agent rosters). A `COMMUNITY`-type `CmsPage` should **enrich** the
-existing `/areas/[slug]` page with editor-written long-form content (neighborhood
-guide copy, "what it's like to live here"), not replace it or exist as a separate
-competing URL. The correct integration is an optional `cmsPageId` FK added to `Area`
-(and similarly `Building`, `Developer`) so the existing page renders the CMS copy
-alongside its existing real data — that's a small, specific follow-up (one FK per
-model + a render-time join), deliberately scoped out of this pass rather than rushed,
-because doing it for one model without the others would be inconsistent, and building
-all four properly needs its own testing pass against real pages that already have
-production traffic value.
+**Why `COMMUNITY` is an enrichment, not a new URL — and how it's actually wired:** the
+brief itself says "do not create duplicate property, agent or agency records if
+equivalent entities already exist... integrate the CMS with the current source of
+truth." Qasro already has a real `Area` model with its own detail page (`/areas/
+[slug]`) backed by real relational data (listings, market metrics). A `COMMUNITY`-type
+`CmsPage` **enriches** that existing page rather than existing as a separate competing
+URL: `Area.cmsPageId` (nullable, unique FK) optionally points at one. Once that linked
+page is `PUBLISHED`, `/areas/[slug]` renders its Markdown body as long-form content
+(neighborhood guide copy, "what it's like to live here") alongside the existing
+stats/listings, and its `seoTitle`/`seoDescription`/`canonicalUrl` take priority over
+the mechanically-derived metadata the page already had. The admin editor shows an Area
+picker only when a page's type is `COMMUNITY`; linking, relinking to a different area,
+and unlinking are all handled (`syncAreaLink()` in `src/modules/cms/actions.ts`).
+Verified end-to-end with a real scripted test, not just assumed from the code.
+
+**`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` follow the
+exact same pattern** (one nullable+unique FK on the respective model) but aren't built
+yet — deliberately sequenced one type at a time rather than all five at once, so each
+integration gets verified against its own real page rather than batched and rushed.
 
 ## D. SEO fields
 
