@@ -42,6 +42,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         src="https://erp.vrodux.com/api/seo/snippet/f9b8624be5bb71ee6c180c3a145a822a2b142595/tag.js"
         strategy="afterInteractive"
       />
+
+      {/* Google tag (gtag.js) */}
+      <Script src="https://www.googletagmanager.com/gtag/js?id=G-L35Y75D23K" strategy="afterInteractive" />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-L35Y75D23K');
+        `}
+      </Script>
     </html>
   );
 }
