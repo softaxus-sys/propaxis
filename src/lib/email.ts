@@ -1,8 +1,9 @@
 /**
  * Transactional email — SMTP-based (via nodemailer) rather than tied to a specific
  * provider's HTTP API, matching this project's existing "bring your own credentials"
- * pattern (see Qasro AI's AI_BASE_URL). Any SMTP-capable provider works: Vrodux's own
- * mail infrastructure, SES, Postmark, SendGrid, Office365, Google Workspace, etc. — set
+ * pattern (see Qasro AI's AI_BASE_URL). Any SMTP-capable provider works — currently
+ * configured with ZeptoMail (qasro.com verified sender), but SES, Postmark, SendGrid,
+ * Office365, Google Workspace etc. all work the same way — set
  * EMAIL_SMTP_HOST/PORT/USER/PASSWORD.
  *
  * Fails safe: with no SMTP configured, sendEmail logs a warning and returns
@@ -32,7 +33,7 @@ function getTransporter(): Transporter | null {
 }
 
 export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "hello@softaxis.ae";
-const DEFAULT_FROM = process.env.EMAIL_FROM || "Qasro <noreply@vrodux.com>";
+const DEFAULT_FROM = process.env.EMAIL_FROM || "Qasro <noreply@qasro.com>";
 
 export type SendEmailInput = {
   to: string | string[];
