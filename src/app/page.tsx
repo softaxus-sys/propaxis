@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { HeroSearch } from "@/components/marketing/hero-search";
@@ -17,6 +18,15 @@ export default async function Home() {
       <SiteHeader />
       <main className="flex-1">
         <section className="relative overflow-hidden bg-ink-950 pb-24 pt-20 text-white">
+          <Image
+            src="/images/hero/dubai-skyline.webp"
+            alt="Dubai skyline at night"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover opacity-50"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink-950/60 via-ink-950/70 to-ink-950" />
           <div
             className="pointer-events-none absolute inset-0 opacity-40"
             style={{
