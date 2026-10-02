@@ -454,6 +454,11 @@ model Project {
   units Unit[]
   leads Lead[]
 
+  // Optional link to a PROJECT-type CmsPage — see Developer.cmsPageId above and
+  // docs/cms-specification.md §C.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
+
   @@index([areaId])
   @@index([developerId])
   @@map("projects")
@@ -1031,6 +1036,7 @@ model CmsPage {
   agency    Agency?
   agent     Agent?
   developer Developer?
+  project   Project?
 
   @@index([status])
   @@index([type])

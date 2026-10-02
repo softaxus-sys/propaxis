@@ -10,22 +10,25 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n/server";
+import { renderCmsBody } from "@/modules/cms/render";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const project = await db.project.findUnique({
     where: { slug },
-    include: { area: true, developer: true },
+    include: { area: true, developer: true, cmsPage: true },
   });
   if (!project) return {};
 
+  const cms = project.cmsPage?.status === "PUBLISHED" ? project.cmsPage : null;
   const priceText = project.startingPriceAed ? ` from ${formatAed(Number(project.startingPriceAed), { compact: true })}` : "";
   return {
-    title: `${project.name} by ${project.developer.name} — ${project.area.name}`,
+    title: cms?.seoTitle || `${project.name} by ${project.developer.name} — ${project.area.name}`,
     description:
+      cms?.seoDescription ||
       project.description?.slice(0, 160) ||
       `${project.name} is an off-plan project by ${project.developer.name} in ${project.area.name}${priceText}. View units and payment plan on Qasro.`,
-    alternates: { canonical: `https://www.qasro.com/new-projects/${slug}` },
+    alternates: { canonical: cms?.canonicalUrl || `https://www.qasro.com/new-projects/${slug}` },
   };
 }
 
@@ -34,12 +37,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const [project, dict] = await Promise.all([
     db.project.findUnique({
       where: { slug },
-      include: { area: true, developer: true, units: { orderBy: { priceAed: "asc" } } },
+      include: { area: true, developer: true, units: { orderBy: { priceAed: "asc" } }, cmsPage: true },
     }),
     getDictionary(),
   ]);
 
   if (!project) notFound();
+
+  const cmsHtml = project.cmsPage?.status === "PUBLISHED" ? renderCmsBody(project.cmsPage.body) : null;
 
   const paymentPlan = Array.isArray(project.paymentPlan)
     ? (project.paymentPlan as { milestone: string; percent: number }[])
@@ -79,6 +84,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {project.description && <p className="mt-6 max-w-2xl text-sm text-sand-700">{project.description}</p>}
+
+          {cmsHtml && (
+            <div
+              className="mt-6 max-w-2xl space-y-4 text-sm leading-relaxed text-sand-700
+                [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink-950
+                [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-ink-950
+                [&_a]:text-bronze-600 [&_a]:underline [&_a]:underline-offset-4
+                [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_li]:mt-1"
+              dangerouslySetInnerHTML={{ __html: cmsHtml }}
+            />
+          )}
 
           <div className="mt-10 grid gap-8 lg:grid-cols-3">
             <div className="space-y-8 lg:col-span-2">

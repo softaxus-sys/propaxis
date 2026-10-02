@@ -47,9 +47,9 @@ Markdown too friction-y, but isn't a blocker for shipping real content today.
 `CmsPageType` enum: `LANDING`, `ARTICLE`, `COMMUNITY`, `BUILDING`, `DEVELOPER_PROFILE`,
 `PROJECT`, `AGENCY_PROFILE`, `AGENT_PROFILE`. ✅ `ARTICLE` is fully wired end to end
 (editor → workflow → public render at `/guides/[slug]`). ✅ `COMMUNITY`, `AGENCY_PROFILE`,
-`AGENT_PROFILE`, and `DEVELOPER_PROFILE` are all wired the same way (see below). 📋
-`BUILDING` and `PROJECT` are the two not done — see the note at the end of this section
-for why `BUILDING` specifically can't follow this same pattern yet.
+`AGENT_PROFILE`, `DEVELOPER_PROFILE`, and `PROJECT` are all wired the same way (see
+below). 📋 `BUILDING` is the one not done — see the note at the end of this section for
+why it can't follow this same pattern yet.
 
 **How the enrichment types work — the brief says "do not create duplicate property,
 agent or agency records if equivalent entities already exist... integrate the CMS with
@@ -61,13 +61,14 @@ URL: each model has a `cmsPageId` (nullable, unique FK). Once that linked page i
 `PUBLISHED`, the page renders its Markdown body as long-form editor content alongside
 the model's existing real data, and the CmsPage's `seoTitle`/`seoDescription`/
 `canonicalUrl` take priority over the page's own mechanically-derived metadata. The
-admin editor shows the matching picker (Area/Agency/Agent/Developer) only for the
-matching type; linking, relinking to a different entity, and unlinking are all handled
-generically (`syncEntityLink()` in `src/modules/cms/actions.ts`, one explicit case per
-type rather than a dynamic-delegate abstraction — see that function's comment for why).
-Verified end-to-end with real scripted tests for all four types, not just assumed from
-the code, including confirming existing profile pages with no linked CMS content still
-render correctly (the common case, and the one most likely to silently break).
+admin editor shows the matching picker (Area/Agency/Agent/Developer/Project) only for
+the matching type; linking, relinking to a different entity, and unlinking are all
+handled generically (`syncEntityLink()` in `src/modules/cms/actions.ts`, one explicit
+case per type rather than a dynamic-delegate abstraction — see that function's comment
+for why). Verified end-to-end with real scripted tests for all five types, not just
+assumed from the code, including confirming existing profile pages with no linked CMS
+content still render correctly (the common case, and the one most likely to silently
+break).
 
 **`BUILDING` doesn't have a public page to enrich at all** — there is no `/buildings/
 [slug]` route anywhere in this app today, unlike Area/Agency/Agent/Developer which all
@@ -76,9 +77,11 @@ from scratch first, which is a genuinely different, larger task than "add one FK
 render block to an existing page" — flagged for a decision rather than silently
 skipped or built without being asked for.
 
-`PROJECT` is different from `BUILDING`: `/new-projects/[slug]` does exist already, so
-it's a real candidate for the exact same pattern as the four done here — just not done
-in this pass. Next in line if/when this gets picked back up.
+`PROJECT` was the natural next candidate after the four above, since `/new-projects/
+[slug]` already existed — now done, same pattern (`Project.cmsPageId`, migration
+`20261002120000_project_cms_link`). Verified with a real scripted test (temporary
+developer + project + CmsPage, through draft→publish→render→cleanup, nothing left
+behind — no real developer/project existed to test against post demo-data-cleanup).
 
 ## D. SEO fields
 

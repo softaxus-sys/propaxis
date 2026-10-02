@@ -98,11 +98,10 @@ Still open, below, renumbered:
 3. **No rich-text editor** — Markdown only (see `cms-specification.md` §B.1 for the
    reasoning). Fine for a technical editor, friction for a non-technical one.
 4. ~~`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` CMS
-   integration~~ — **`AGENCY_PROFILE`, `AGENT_PROFILE`, and `DEVELOPER_PROFILE` are now
-   built**, same pattern as `COMMUNITY`, verified end-to-end for each. Still open:
-   `BUILDING` (no public page exists to enrich at all — would need a new page built
-   first, not just this pattern) and `PROJECT` (a real page exists at
-   `/new-projects/[slug]`, just not wired up yet).
+   integration~~ — **`AGENCY_PROFILE`, `AGENT_PROFILE`, `DEVELOPER_PROFILE`, and
+   `PROJECT` are now all built**, same pattern as `COMMUNITY`, verified end-to-end for
+   each. Still open: `BUILDING` (no public page exists to enrich at all — would need a
+   new page built first, not just this pattern).
 5. ~~Listing photo editing~~ — **Fixed.** `/agent/dashboard/listings/[id]` lets the
    owning agent (or the owning agency's admin, or a site admin) edit a listing's
    fields and photos — remove any existing photo, add up to 12 total via the same

@@ -43,12 +43,13 @@ export async function getCmsPageById(id: string) {
       agency: { select: { id: true } },
       agent: { select: { id: true } },
       developer: { select: { id: true } },
+      project: { select: { id: true } },
     },
   });
 }
 
-/** For the entity pickers (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/DEVELOPER_PROFILE) in
- * the CMS editor — see docs/cms-specification.md §C. */
+/** For the entity pickers (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/DEVELOPER_PROFILE/
+ * PROJECT) in the CMS editor — see docs/cms-specification.md §C. */
 export async function listAreasForLinking() {
   return db.area.findMany({ select: { id: true, name: true, city: true }, orderBy: { name: "asc" } });
 }
@@ -61,15 +62,19 @@ export async function listAgentsForLinking() {
 export async function listDevelopersForLinking() {
   return db.developer.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
 }
+export async function listProjectsForLinking() {
+  return db.project.findMany({ select: { id: true, name: true, developer: { select: { name: true } } }, orderBy: { name: "asc" } });
+}
 
-/** All four entity picker lists at once, pre-shaped for CmsPageForm's
+/** All five entity picker lists at once, pre-shaped for CmsPageForm's
  * `entityOptionsByType` prop — the one call both admin content routes need. */
 export async function listEntityOptionsByType() {
-  const [areas, agencies, agents, developers] = await Promise.all([
+  const [areas, agencies, agents, developers, projects] = await Promise.all([
     listAreasForLinking(),
     listAgenciesForLinking(),
     listAgentsForLinking(),
     listDevelopersForLinking(),
+    listProjectsForLinking(),
   ]);
 
   return {
@@ -77,6 +82,7 @@ export async function listEntityOptionsByType() {
     AGENCY_PROFILE: agencies.map((a) => ({ id: a.id, label: a.name })),
     AGENT_PROFILE: agents.map((a) => ({ id: a.id, label: a.user.name ?? "(unnamed agent)" })),
     DEVELOPER_PROFILE: developers.map((d) => ({ id: d.id, label: d.name })),
+    PROJECT: projects.map((p) => ({ id: p.id, label: `${p.name} — ${p.developer.name}` })),
   };
 }
 

@@ -18,6 +18,7 @@ const ENTITY_PICKER: Partial<Record<CmsPage["type"], { label: string; publicPath
   AGENCY_PROFILE: { label: "Agency", publicPath: "/agencies/[slug]" },
   AGENT_PROFILE: { label: "Agent", publicPath: "/agents/[slug]" },
   DEVELOPER_PROFILE: { label: "Developer", publicPath: "/developers/[slug]" },
+  PROJECT: { label: "Project", publicPath: "/new-projects/[slug]" },
 };
 
 export function CmsPageForm({
@@ -60,7 +61,9 @@ export function CmsPageForm({
             ))}
           </select>
           <p className="mt-1 text-xs text-sand-500">
-            Only ARTICLE renders publicly today, at /guides/[slug] — see docs/cms-specification.md.
+            ARTICLE renders at /guides/[slug]; COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/
+            DEVELOPER_PROFILE/PROJECT enrich an existing entity page instead (pick it
+            below once selected) — see docs/cms-specification.md.
           </p>
         </div>
 
