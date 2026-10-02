@@ -26,11 +26,14 @@ export default async function Home() {
             sizes="100vw"
             className="object-cover"
           />
-          {/* Dark on the left where the text sits, fading out so the photo itself stays
-              visible on the right — replaces the old triple-stacked overlay (50%-opacity
-              image + a near-opaque navy gradient + a blue radial blob) that was hiding the
-              photo almost entirely. */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/75 to-ink-950/10 sm:to-ink-950/0" />
+          {/* Dark on the side the text sits on, fading out so the photo itself stays visible
+              on the other side — replaces the old triple-stacked overlay (50%-opacity image
+              + a near-opaque navy gradient + a blue radial blob) that was hiding the photo
+              almost entirely. The text block flips sides with the page direction (it's in a
+              plain Container, not logical-positioned), so the gradient has to flip with it —
+              rtl: here isn't optional polish, without it Arabic text sits on the light/photo
+              side with no contrast at all. */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/75 to-ink-950/10 rtl:bg-gradient-to-l sm:to-ink-950/0" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-ink-950" />
           <Container className="relative">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-bronze-300">

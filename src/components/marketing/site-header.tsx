@@ -4,6 +4,7 @@ import { Container } from "@/components/ui/container";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/marketing/language-switcher";
+import { MobileNav } from "@/components/marketing/mobile-nav";
 import { getLocale, getDictionary } from "@/lib/i18n/server";
 
 export async function SiteHeader() {
@@ -46,18 +47,24 @@ export async function SiteHeader() {
             </Button>
           </Link>
           {session?.user ? (
-            <Link href="/dashboard">
+            <Link href="/dashboard" className="hidden sm:block">
               <Button variant="outline" size="sm">
                 {dict.nav.dashboard}
               </Button>
             </Link>
           ) : (
-            <Link href="/login">
+            <Link href="/login" className="hidden sm:block">
               <Button variant="ghost" size="sm">
                 {dict.nav.signIn}
               </Button>
             </Link>
           )}
+          <MobileNav
+            navLinks={[
+              ...navLinks,
+              session?.user ? { href: "/dashboard", label: dict.nav.dashboard } : { href: "/login", label: dict.nav.signIn },
+            ]}
+          />
         </div>
       </Container>
     </header>

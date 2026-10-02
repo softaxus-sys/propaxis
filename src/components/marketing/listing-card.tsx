@@ -33,18 +33,25 @@ export function ListingCard({ listing, dict }: { listing: ListingCardData; dict:
 
   return (
     <Link href={`/property/${listing.id}`} className="group block">
-      <Card className="overflow-hidden transition-shadow group-hover:shadow-md">
-        <div
-          className="relative flex h-44 items-end bg-gradient-to-br from-ink-800 to-ink-950 bg-cover bg-center p-4"
-          style={coverImage ? { backgroundImage: `linear-gradient(to top, rgba(10,15,31,0.65), rgba(10,15,31,0.1)), url(${coverImage})` } : undefined}
-        >
-          <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute start-4 top-4">
+      <Card className="overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+        <div className="relative flex h-44 items-end overflow-hidden bg-gradient-to-br from-ink-800 to-ink-950 p-4">
+          {coverImage && (
+            // eslint-disable-next-line @next/next/no-img-element -- external, dynamically-sourced photo (agency uploads, Vrodux-synced signed URLs); see docs/ARCHITECTURE.md §7.2
+            <img
+              src={coverImage}
+              alt={listing.title}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
+          {coverImage && <div className="absolute inset-0 bg-gradient-to-t from-ink-950/65 to-ink-950/10" />}
+          <Badge variant={listing.type === "SALE" ? "accent" : "info"} className="absolute start-4 top-4 z-10">
             {listing.type === "SALE" ? dict.common.forSale : dict.common.forRent}
           </Badge>
           {listing.isDemoData && (
-            <DemoDataBadge label={dict.common.demoData} className="absolute end-4 top-4 bg-white/90" />
+            <DemoDataBadge label={dict.common.demoData} className="absolute end-4 top-4 z-10 bg-white/90" />
           )}
-          <span className="text-lg font-semibold text-white">{price}</span>
+          <span className="relative z-10 text-lg font-semibold text-white">{price}</span>
         </div>
 
         <div className="space-y-3 p-4">
