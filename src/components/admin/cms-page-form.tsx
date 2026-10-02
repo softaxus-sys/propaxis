@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUrlField } from "@/components/admin/image-url-field";
+import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import type { CmsFormState } from "@/modules/cms/actions";
 import type { CmsPage } from "@prisma/client";
 
@@ -102,16 +103,11 @@ export function CmsPageForm({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink-950">Body (Markdown)</label>
-          <textarea
-            name="body"
-            required
-            rows={20}
-            defaultValue={page?.body}
-            className="w-full rounded-lg border border-sand-300 bg-white px-3.5 py-2.5 font-mono text-sm text-ink-950 focus:border-ink-700 focus:outline-none focus:ring-2 focus:ring-ink-700/10"
-          />
+          <label className="mb-1.5 block text-sm font-medium text-ink-950">Body</label>
+          <RichTextEditor name="body" defaultValue={page?.body} />
           <p className="mt-1 text-xs text-sand-500">
-            Rendered as sanitized HTML at request time — headings, lists, links, tables, images, blockquotes.
+            Stored as Markdown under the hood (same format as before — nothing published
+            needs to change), rendered as sanitized HTML at request time.
           </p>
         </div>
 

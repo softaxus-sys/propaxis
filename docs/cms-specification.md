@@ -24,23 +24,46 @@ have issues.
 Archived status workflow (`CmsPageStatus` enum). ✅ Author, reviewer, editorial notes,
 created/updated timestamps. ✅ Full revision history with restore (each save snapshots
 the *current* state before overwriting, so restore is itself undoable — see
-`CmsPageRevision`). 📋 Markdown is the content format, not a rich-text/WYSIWYG editor —
-see §B.1. 📋 "Preview unpublished content securely" — today an admin previews a draft by
-opening `/admin/dashboard/content/{id}` (which shows the raw fields); there's no
-separate rendered preview matching the live `/guides/[slug]` template. 📋 Reusable page
+`CmsPageRevision`). ✅ Rich-text (WYSIWYG) editing — see §B.1. 📋 "Preview unpublished
+content securely" — today an admin previews a draft by opening
+`/admin/dashboard/content/{id}` (which shows the raw fields); there's no separate
+rendered preview matching the live `/guides/[slug]` template. 📋 Reusable page
 templates/sections — not built; each `CmsPage` is independent content today.
 
-### B.1 Why Markdown, not a rich-text editor
+### B.1 Rich-text editing, Markdown underneath
 
-A full WYSIWYG editor (TipTap, Lexical, etc.) is a substantial separate integration —
-schema for structured content blocks, a client-side editor bundle, image upload
-handling inside the editor, serialization format. Markdown in a `<textarea>`, rendered
-to sanitized HTML at request time (`src/modules/cms/render.ts`, via `marked` +
-`isomorphic-dompurify`), covers headings, lists, links, tables, images, blockquotes,
-and code — everything the brief's content types actually need — at a fraction of the
-engineering cost and risk. **This is the one explicit scope reduction in this pass**:
-upgrading to a rich-text editor is a reasonable Phase 2 if non-technical editors find
-Markdown too friction-y, but isn't a blocker for shipping real content today.
+`src/components/admin/rich-text-editor.tsx` — a TipTap-based WYSIWYG editor (toolbar:
+bold/italic/H2/H3/bullet+numbered lists/blockquote/link/image upload/undo/redo) in
+place of the original bare Markdown `<textarea>`. The wire format is still plain
+Markdown — `tiptap-markdown` parses/serializes between it and the editor's content, so
+`src/modules/cms/render.ts` (`marked` + `sanitize-html`), revisions, excerpt generation,
+and every already-published page are completely unaffected; this is a better authoring
+surface for the same stored format, not a new one.
+
+This took three real, non-obvious fixes along the way, each found by actually testing
+the save → DB → reload round trip rather than trusting that it compiled, consistent
+with this project's established rigor:
+- `@tiptap/extension-image` has no markdown serializer of its own, and with HTML
+  fallback disabled, an inserted image silently vanished from the saved Markdown
+  entirely. Fixed by attaching `prosemirror-markdown`'s default image serializer
+  directly to the Image extension in use.
+- TipTap v3's `useEditor` (default empty deps) re-applies `editor.setOptions()` —
+  including the *original* `content` option — on any render where the `extensions`
+  array has different object references, which an inline array containing
+  `.configure(...)` calls produces on every render. Combined with the `setUploading`
+  state change around the (async) image upload, this silently wiped whatever had been
+  typed since mount. Fixed by hoisting the extensions array to module scope so the same
+  references are reused every render.
+- The image-insert-at-cursor command, if run against whatever the "current" selection
+  happens to be after the native file picker's async gap, could replace the entire
+  document instead of inserting at the right spot. Fixed by capturing the cursor
+  position at the moment the toolbar button is clicked (before the picker opens) and
+  inserting at that explicit position.
+
+Verified with a real browser session (not just a clean build): typed/formatted content,
+image upload (real Contabo round trip), full save, and — critically — reloading the
+saved page back into the editor to confirm the Markdown parses back into the same rich
+content, not just that it serializes out correctly once.
 
 ## C. Content types
 
