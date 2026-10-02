@@ -24,16 +24,14 @@ export default async function Home() {
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-50"
+            className="object-cover"
           />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink-950/60 via-ink-950/70 to-ink-950" />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 15% 20%, rgba(219,178,108,0.25), transparent 40%), radial-gradient(circle at 85% 0%, rgba(46,60,107,0.5), transparent 45%)",
-            }}
-          />
+          {/* Dark on the left where the text sits, fading out so the photo itself stays
+              visible on the right — replaces the old triple-stacked overlay (50%-opacity
+              image + a near-opaque navy gradient + a blue radial blob) that was hiding the
+              photo almost entirely. */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/75 to-ink-950/10 sm:to-ink-950/0" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-ink-950" />
           <Container className="relative">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-bronze-300">
               {dict.home.tagline}
