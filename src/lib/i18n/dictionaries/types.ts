@@ -18,6 +18,7 @@ export type Dictionary = {
     newProjects: string;
     commercial: string;
     areas: string;
+    buildings: string;
     professionalsTitle: string;
     findAgent: string;
     agencies: string;
@@ -141,6 +142,19 @@ export type Dictionary = {
     grossRentalYield: string;
     priceChange: string;
     listingsLabel: string;
+  };
+  buildings: {
+    pageTitle: string;
+    pageSubtitle: string;
+    listingsInBuilding: string;
+    noListingsYet: string;
+    noListingsYetHint: string;
+    browseOtherBuildings: string;
+    listingsLabel: string;
+    totalFloors: string;
+    yearBuilt: string;
+    developer: string;
+    area: string;
   };
   agents: {
     pageTitle: string;

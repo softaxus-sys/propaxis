@@ -31,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/agencies`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/developers`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/areas`, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${SITE_URL}/buildings`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/insights`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${SITE_URL}/valuation`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/investment-calculator`, changeFrequency: "monthly", priority: 0.5 },
@@ -55,6 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const developers = await db.developer.findMany({ select: { slug: true, updatedAt: true } });
   const areas = await db.area.findMany({ select: { slug: true, updatedAt: true } });
   const projects = await db.project.findMany({ select: { slug: true, updatedAt: true } });
+  const buildings = await db.building.findMany({ select: { slug: true, updatedAt: true } });
   const guides = await db.cmsPage.findMany({
     where: { type: "ARTICLE", status: "PUBLISHED", noindex: false },
     select: { slug: true, updatedAt: true },
@@ -67,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...agencies.map((a) => ({ url: `${SITE_URL}/agencies/${a.slug}`, lastModified: a.updatedAt, changeFrequency: "monthly" as const, priority: 0.5 })),
     ...developers.map((d) => ({ url: `${SITE_URL}/developers/${d.slug}`, lastModified: d.updatedAt, changeFrequency: "monthly" as const, priority: 0.5 })),
     ...areas.map((a) => ({ url: `${SITE_URL}/areas/${a.slug}`, lastModified: a.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...buildings.map((b) => ({ url: `${SITE_URL}/buildings/${b.slug}`, lastModified: b.updatedAt, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...projects.map((p) => ({ url: `${SITE_URL}/new-projects/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...guides.map((g) => ({ url: `${SITE_URL}/guides/${g.slug}`, lastModified: g.updatedAt, changeFrequency: "monthly" as const, priority: 0.6 })),
   ];

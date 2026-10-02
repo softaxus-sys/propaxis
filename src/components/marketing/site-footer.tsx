@@ -15,6 +15,7 @@ export async function SiteFooter() {
         { href: "/new-projects", label: dict.footer.newProjects },
         { href: "/commercial", label: dict.footer.commercial },
         { href: "/areas", label: dict.footer.areas },
+        { href: "/buildings", label: dict.footer.buildings },
       ],
     },
     {

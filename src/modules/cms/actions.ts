@@ -113,7 +113,7 @@ export async function createCmsPage(_prev: CmsFormState, formData: FormData): Pr
   redirect(`/admin/dashboard/content/${page.id}`);
 }
 
-type LinkableType = "COMMUNITY" | "AGENCY_PROFILE" | "AGENT_PROFILE" | "DEVELOPER_PROFILE" | "PROJECT";
+type LinkableType = "COMMUNITY" | "AGENCY_PROFILE" | "AGENT_PROFILE" | "DEVELOPER_PROFILE" | "PROJECT" | "BUILDING";
 
 /** Keeps the linked entity's cmsPageId in sync with the editor's selection — the FK
  * always lives on the entity side (Area/Agency/Agent/Developer), not on CmsPage, so
@@ -154,6 +154,12 @@ async function syncEntityLink(type: string, pageId: string, entityId: string | u
       if (entityId && entityId !== current?.id) await db.project.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
       return;
     }
+    case "BUILDING": {
+      const current = await db.building.findFirst({ where: { cmsPageId: pageId } });
+      if (current && current.id !== entityId) await db.building.update({ where: { id: current.id }, data: { cmsPageId: null } });
+      if (entityId && entityId !== current?.id) await db.building.update({ where: { id: entityId }, data: { cmsPageId: pageId } });
+      return;
+    }
   }
 }
 
@@ -169,6 +175,7 @@ function revalidateLinkedPublicPaths(type: string): void {
     case "AGENT_PROFILE": revalidatePath("/agents"); revalidatePath("/agents/[slug]", "page"); return;
     case "DEVELOPER_PROFILE": revalidatePath("/developers"); revalidatePath("/developers/[slug]", "page"); return;
     case "PROJECT": revalidatePath("/new-projects"); revalidatePath("/new-projects/[slug]", "page"); return;
+    case "BUILDING": revalidatePath("/buildings"); revalidatePath("/buildings/[slug]", "page"); return;
   }
 }
 

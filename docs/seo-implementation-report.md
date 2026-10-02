@@ -98,10 +98,11 @@ Still open, below, renumbered:
 3. **No rich-text editor** — Markdown only (see `cms-specification.md` §B.1 for the
    reasoning). Fine for a technical editor, friction for a non-technical one.
 4. ~~`BUILDING`/`DEVELOPER_PROFILE`/`AGENCY_PROFILE`/`AGENT_PROFILE`/`PROJECT` CMS
-   integration~~ — **`AGENCY_PROFILE`, `AGENT_PROFILE`, `DEVELOPER_PROFILE`, and
-   `PROJECT` are now all built**, same pattern as `COMMUNITY`, verified end-to-end for
-   each. Still open: `BUILDING` (no public page exists to enrich at all — would need a
-   new page built first, not just this pattern).
+   integration~~ — **All five are now built.** `AGENCY_PROFILE`, `AGENT_PROFILE`,
+   `DEVELOPER_PROFILE`, and `PROJECT` follow the existing enrichment pattern;
+   `BUILDING` needed a new `/buildings/[slug]` page built from scratch first (none
+   existed), now live with 4 real buildings' worth of content (from Vrodux-synced
+   listings) and linked from the footer and each property page.
 5. ~~Listing photo editing~~ — **Fixed.** `/agent/dashboard/listings/[id]` lets the
    owning agent (or the owning agency's admin, or a site admin) edit a listing's
    fields and photos — remove any existing photo, add up to 12 total via the same

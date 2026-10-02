@@ -99,7 +99,14 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 </div>
                 <h1 className="mt-3 text-2xl font-semibold">{listing.title}</h1>
                 <p className="mt-1 text-sand-200">
-                  {property.building ? `${property.building.name}, ` : ""}
+                  {property.building && (
+                    <>
+                      <Link href={`/buildings/${property.building.slug}`} className="underline underline-offset-4 hover:text-white">
+                        {property.building.name}
+                      </Link>
+                      {", "}
+                    </>
+                  )}
                   {property.area.name}
                 </p>
               </div>

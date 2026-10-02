@@ -34,7 +34,8 @@ export default async function EditCmsPagePage({ params }: { params: Promise<{ id
   const [page, entityOptionsByType] = await Promise.all([getCmsPageById(id), listEntityOptionsByType()]);
   if (!page) notFound();
 
-  const currentEntityId = page.area?.id ?? page.agency?.id ?? page.agent?.id ?? page.developer?.id ?? page.project?.id;
+  const currentEntityId =
+    page.area?.id ?? page.agency?.id ?? page.agent?.id ?? page.developer?.id ?? page.project?.id ?? page.building?.id;
 
   const updateAction = updateCmsPage.bind(null, id);
 

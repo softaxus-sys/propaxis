@@ -415,6 +415,11 @@ model Building {
 
   properties Property[]
 
+  // Optional link to a BUILDING-type CmsPage — see Developer.cmsPageId above and
+  // docs/cms-specification.md §C.
+  cmsPageId String?  @unique
+  cmsPage   CmsPage? @relation(fields: [cmsPageId], references: [id])
+
   @@index([areaId])
   @@map("buildings")
 }
@@ -1037,6 +1042,7 @@ model CmsPage {
   agent     Agent?
   developer Developer?
   project   Project?
+  building  Building?
 
   @@index([status])
   @@index([type])

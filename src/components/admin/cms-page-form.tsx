@@ -19,6 +19,7 @@ const ENTITY_PICKER: Partial<Record<CmsPage["type"], { label: string; publicPath
   AGENT_PROFILE: { label: "Agent", publicPath: "/agents/[slug]" },
   DEVELOPER_PROFILE: { label: "Developer", publicPath: "/developers/[slug]" },
   PROJECT: { label: "Project", publicPath: "/new-projects/[slug]" },
+  BUILDING: { label: "Building", publicPath: "/buildings/[slug]" },
 };
 
 export function CmsPageForm({

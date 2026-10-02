@@ -45,11 +45,12 @@ Markdown too friction-y, but isn't a blocker for shipping real content today.
 ## C. Content types
 
 `CmsPageType` enum: `LANDING`, `ARTICLE`, `COMMUNITY`, `BUILDING`, `DEVELOPER_PROFILE`,
-`PROJECT`, `AGENCY_PROFILE`, `AGENT_PROFILE`. ✅ `ARTICLE` is fully wired end to end
-(editor → workflow → public render at `/guides/[slug]`). ✅ `COMMUNITY`, `AGENCY_PROFILE`,
-`AGENT_PROFILE`, `DEVELOPER_PROFILE`, and `PROJECT` are all wired the same way (see
-below). 📋 `BUILDING` is the one not done — see the note at the end of this section for
-why it can't follow this same pattern yet.
+`PROJECT`, `AGENCY_PROFILE`, `AGENT_PROFILE`. ✅ All eight are now wired: `ARTICLE` end
+to end (editor → workflow → public render at `/guides/[slug]`); `COMMUNITY`,
+`AGENCY_PROFILE`, `AGENT_PROFILE`, `DEVELOPER_PROFILE`, `PROJECT`, and `BUILDING` all
+via the enrichment pattern below. `LANDING` has no dedicated public renderer yet — no
+page type in this app maps cleanly to a free-standing landing page the way the others
+map to a real entity; revisit if a concrete use case shows up.
 
 **How the enrichment types work — the brief says "do not create duplicate property,
 agent or agency records if equivalent entities already exist... integrate the CMS with
@@ -70,18 +71,25 @@ assumed from the code, including confirming existing profile pages with no linke
 content still render correctly (the common case, and the one most likely to silently
 break).
 
-**`BUILDING` doesn't have a public page to enrich at all** — there is no `/buildings/
-[slug]` route anywhere in this app today, unlike Area/Agency/Agent/Developer which all
-already had one. Wiring up `BUILDING`-type CMS content would mean building that page
-from scratch first, which is a genuinely different, larger task than "add one FK and a
-render block to an existing page" — flagged for a decision rather than silently
-skipped or built without being asked for.
+`PROJECT` was the natural next candidate after the four original types, since
+`/new-projects/[slug]` already existed — now done, same pattern (`Project.cmsPageId`,
+migration `20261002120000_project_cms_link`). Verified with a real scripted test
+(temporary developer + project + CmsPage, through draft→publish→render→cleanup, nothing
+left behind — no real developer/project existed to test against post
+demo-data-cleanup).
 
-`PROJECT` was the natural next candidate after the four above, since `/new-projects/
-[slug]` already existed — now done, same pattern (`Project.cmsPageId`, migration
-`20261002120000_project_cms_link`). Verified with a real scripted test (temporary
-developer + project + CmsPage, through draft→publish→render→cleanup, nothing left
-behind — no real developer/project existed to test against post demo-data-cleanup).
+**`BUILDING` didn't have a public page at all** — no `/buildings/[slug]` route existed,
+unlike the other five types which all had a real entity page already. Built it from
+scratch (`src/app/buildings/page.tsx` index + `src/app/buildings/[slug]/page.tsx`
+detail, `src/modules/buildings/queries.ts`, linked from the footer and from each
+property's building name on `/property/[id]`), then wired the same `cmsPageId`
+enrichment pattern on top (migration `20261002130000_building_cms_link`). There are 4
+real buildings in the database today (from Vrodux-synced listings), each with 1 real
+listing — enough real content to justify the page, not the thin/empty-location-page
+problem this spec warns against elsewhere. Verified with a real scripted test against
+one of those actual buildings ("Armada Tower 1"), not a throwaway one, plus a real
+`next start` check confirming the index, detail page, and the new property-page link
+all render correctly.
 
 ## D. SEO fields
 

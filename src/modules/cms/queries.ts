@@ -44,12 +44,13 @@ export async function getCmsPageById(id: string) {
       agent: { select: { id: true } },
       developer: { select: { id: true } },
       project: { select: { id: true } },
+      building: { select: { id: true } },
     },
   });
 }
 
 /** For the entity pickers (COMMUNITY/AGENCY_PROFILE/AGENT_PROFILE/DEVELOPER_PROFILE/
- * PROJECT) in the CMS editor — see docs/cms-specification.md §C. */
+ * PROJECT/BUILDING) in the CMS editor — see docs/cms-specification.md §C. */
 export async function listAreasForLinking() {
   return db.area.findMany({ select: { id: true, name: true, city: true }, orderBy: { name: "asc" } });
 }
@@ -65,16 +66,20 @@ export async function listDevelopersForLinking() {
 export async function listProjectsForLinking() {
   return db.project.findMany({ select: { id: true, name: true, developer: { select: { name: true } } }, orderBy: { name: "asc" } });
 }
+export async function listBuildingsForLinking() {
+  return db.building.findMany({ select: { id: true, name: true, area: { select: { name: true } } }, orderBy: { name: "asc" } });
+}
 
-/** All five entity picker lists at once, pre-shaped for CmsPageForm's
+/** All six entity picker lists at once, pre-shaped for CmsPageForm's
  * `entityOptionsByType` prop — the one call both admin content routes need. */
 export async function listEntityOptionsByType() {
-  const [areas, agencies, agents, developers, projects] = await Promise.all([
+  const [areas, agencies, agents, developers, projects, buildings] = await Promise.all([
     listAreasForLinking(),
     listAgenciesForLinking(),
     listAgentsForLinking(),
     listDevelopersForLinking(),
     listProjectsForLinking(),
+    listBuildingsForLinking(),
   ]);
 
   return {
@@ -83,6 +88,7 @@ export async function listEntityOptionsByType() {
     AGENT_PROFILE: agents.map((a) => ({ id: a.id, label: a.user.name ?? "(unnamed agent)" })),
     DEVELOPER_PROFILE: developers.map((d) => ({ id: d.id, label: d.name })),
     PROJECT: projects.map((p) => ({ id: p.id, label: `${p.name} — ${p.developer.name}` })),
+    BUILDING: buildings.map((b) => ({ id: b.id, label: `${b.name}, ${b.area.name}` })),
   };
 }
 
