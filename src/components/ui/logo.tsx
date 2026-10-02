@@ -8,8 +8,8 @@ export function Logo({ className, mark = "light" }: { className?: string; mark?:
     <Image
       src={mark === "light" ? "/qasro-logo.png" : "/qasro-logo-light.png"}
       alt="Qasro — The Home Of Palaces"
-      width={1993}
-      height={927}
+      width={2048}
+      height={659}
       priority
       className={cn("h-12 w-auto", className)}
     />
