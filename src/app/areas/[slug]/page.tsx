@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, TrendingDown, Building2 } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { ListingCard } from "@/components/marketing/listing-card";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getAreaBySlug } from "@/modules/areas/queries";
@@ -111,7 +114,19 @@ export default async function AreaDetailPage({ params }: { params: Promise<{ slu
             {dict.areas.listingsInArea} {area.name}
           </h2>
           {listings.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-600">{dict.areas.noListingsYet}</p>
+            <EmptyState
+              icon={Building2}
+              title={dict.areas.noListingsYet}
+              description={dict.areas.noListingsYetHint}
+              action={
+                <Link href="/areas">
+                  <Button variant="outline" size="sm">
+                    {dict.areas.browseOtherAreas}
+                  </Button>
+                </Link>
+              }
+              className="mt-6"
+            />
           ) : (
             <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((listing) => (

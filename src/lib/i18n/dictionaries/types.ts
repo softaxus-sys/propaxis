@@ -101,6 +101,7 @@ export type Dictionary = {
     listingFound: string;
     noResults: string;
     noResultsHint: string;
+    clearFilters: string;
     locationPlaceholder: string;
     go: string;
     propertyTypeLabel: string;
@@ -133,6 +134,8 @@ export type Dictionary = {
     pageSubtitle: string;
     listingsInArea: string;
     noListingsYet: string;
+    noListingsYetHint: string;
+    browseOtherAreas: string;
     avgPricePerSqft: string;
     avgAnnualRent: string;
     grossRentalYield: string;

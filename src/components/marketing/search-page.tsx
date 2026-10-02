@@ -1,9 +1,13 @@
+import Link from "next/link";
+import { SearchX } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SearchFilters } from "@/components/marketing/search-filters";
 import { ListingCard } from "@/components/marketing/listing-card";
 import { Pagination } from "@/components/marketing/pagination";
 import { Container } from "@/components/ui/container";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { searchListings } from "@/modules/listings/search";
 import { getDictionary } from "@/lib/i18n/server";
 
@@ -49,10 +53,19 @@ export async function SearchPage({
           </div>
 
           {result.listings.length === 0 ? (
-            <div className="mt-16 rounded-2xl border border-dashed border-sand-300 bg-white py-16 text-center">
-              <p className="text-sand-600">{dict.search.noResults}</p>
-              <p className="mt-1 text-sm text-sand-500">{dict.search.noResultsHint}</p>
-            </div>
+            <EmptyState
+              icon={SearchX}
+              title={dict.search.noResults}
+              description={dict.search.noResultsHint}
+              action={
+                <Link href={basePath}>
+                  <Button variant="outline" size="sm">
+                    {dict.search.clearFilters}
+                  </Button>
+                </Link>
+              }
+              className="mt-16"
+            />
           ) : (
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {result.listings.map((listing) => (
