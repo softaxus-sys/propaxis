@@ -163,4 +163,5 @@ export async function updateLeadStatus(formData: FormData) {
   await db.lead.update({ where: { id: lead.id }, data: { status: parsed.data.status } });
   revalidatePath("/agent/dashboard");
   revalidatePath("/agency/dashboard");
+  revalidatePath("/admin/dashboard/leads");
 }

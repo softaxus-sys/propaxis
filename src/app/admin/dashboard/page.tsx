@@ -9,11 +9,7 @@ import Link from "next/link";
 import { requireRole } from "@/modules/auth/rbac";
 import { reviewVerification, reviewAgentVerification, reviewAgencyVerification } from "@/modules/verification/actions";
 import { cmsDashboardCounts } from "@/modules/cms/queries";
-
-const NAV = [
-  { href: "/admin/dashboard", label: "Overview" },
-  { href: "/admin/dashboard/content", label: "Content" },
-];
+import { ADMIN_NAV as NAV } from "@/components/dashboard/admin-nav";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
@@ -49,18 +45,24 @@ export default async function AdminDashboardPage() {
       <h1 className="text-2xl font-semibold text-ink-950">Platform overview</h1>
 
       <div className="mt-6 grid grid-cols-3 gap-4">
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-sand-500">Users</p>
-          <p className="mt-1 text-xl font-semibold text-ink-950">{userCount}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-sand-500">Listings</p>
-          <p className="mt-1 text-xl font-semibold text-ink-950">{listingCount}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide text-sand-500">Leads</p>
-          <p className="mt-1 text-xl font-semibold text-ink-950">{leadCount}</p>
-        </Card>
+        <Link href="/admin/dashboard/users">
+          <Card className="p-4 transition-shadow hover:shadow-md">
+            <p className="text-xs uppercase tracking-wide text-sand-500">Users</p>
+            <p className="mt-1 text-xl font-semibold text-ink-950">{userCount}</p>
+          </Card>
+        </Link>
+        <Link href="/admin/dashboard/listings">
+          <Card className="p-4 transition-shadow hover:shadow-md">
+            <p className="text-xs uppercase tracking-wide text-sand-500">Listings</p>
+            <p className="mt-1 text-xl font-semibold text-ink-950">{listingCount}</p>
+          </Card>
+        </Link>
+        <Link href="/admin/dashboard/leads">
+          <Card className="p-4 transition-shadow hover:shadow-md">
+            <p className="text-xs uppercase tracking-wide text-sand-500">Leads</p>
+            <p className="mt-1 text-xl font-semibold text-ink-950">{leadCount}</p>
+          </Card>
+        </Link>
       </div>
 
       <h2 className="mt-10 flex items-center justify-between text-lg font-semibold text-ink-950">
@@ -98,7 +100,9 @@ export default async function AdminDashboardPage() {
         {pendingAgencies.map((agency) => (
           <div key={agency.id} className="flex items-center justify-between gap-4 p-4 text-sm">
             <div className="min-w-0">
-              <p className="truncate font-medium text-ink-950">{agency.name}</p>
+              <Link href={`/agencies/${agency.slug}`} className="truncate font-medium text-ink-950 hover:text-bronze-600 hover:underline">
+                {agency.name}
+              </Link>
               <p className="text-sand-500">
                 Agency · RERA/DED: {agency.ridNumber ?? "—"} · {agency._count.agents} agent(s)
               </p>
@@ -125,7 +129,9 @@ export default async function AdminDashboardPage() {
         {pendingAgents.map((agent) => (
           <div key={agent.id} className="flex items-center justify-between gap-4 p-4 text-sm">
             <div className="min-w-0">
-              <p className="truncate font-medium text-ink-950">{agent.user.name}</p>
+              <Link href={`/agents/${agent.slug}`} className="truncate font-medium text-ink-950 hover:text-bronze-600 hover:underline">
+                {agent.user.name}
+              </Link>
               <p className="text-sand-500">
                 Agent · RERA: {agent.ridNumber ?? "—"} · {agent.agency?.name ?? "No agency"}
               </p>
@@ -159,9 +165,18 @@ export default async function AdminDashboardPage() {
         {pendingVerifications.map((property) => (
           <div key={property.id} className="flex items-center justify-between gap-4 p-4 text-sm">
             <div className="min-w-0">
-              <p className="truncate font-medium text-ink-950">
-                {property.listings[0]?.title ?? `${property.type} in ${property.area.name}`}
-              </p>
+              {property.listings[0] ? (
+                <Link
+                  href={`/property/${property.listings[0].id}`}
+                  className="truncate font-medium text-ink-950 hover:text-bronze-600 hover:underline"
+                >
+                  {property.listings[0].title}
+                </Link>
+              ) : (
+                <p className="truncate font-medium text-ink-950">
+                  {property.type} in {property.area.name}
+                </p>
+              )}
               <p className="text-sand-500">{property.area.name}</p>
             </div>
             <div className="flex items-center gap-2">

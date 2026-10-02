@@ -19,11 +19,7 @@ import {
   deleteCmsPage,
 } from "@/modules/cms/actions";
 import { CmsPageForm } from "@/components/admin/cms-page-form";
-
-const NAV = [
-  { href: "/admin/dashboard", label: "Overview" },
-  { href: "/admin/dashboard/content", label: "Content" },
-];
+import { ADMIN_NAV as NAV } from "@/components/dashboard/admin-nav";
 
 export default async function EditCmsPagePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -112,7 +108,7 @@ export default async function EditCmsPagePage({ params }: { params: Promise<{ id
           </Button>
         </form>
         <span className="text-xs text-sand-500">
-          Runs once daily via the scheduled-publish cron (Vercel Hobby's cron limit — see
+          Runs once daily via the scheduled-publish cron (Vercel Hobby&apos;s cron limit — see
           docs/cms-specification.md), not at the exact minute.
         </span>
       </Card>

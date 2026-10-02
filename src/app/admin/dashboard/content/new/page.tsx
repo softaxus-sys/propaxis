@@ -5,11 +5,7 @@ import { requireRole } from "@/modules/auth/rbac";
 import { createCmsPage } from "@/modules/cms/actions";
 import { listEntityOptionsByType } from "@/modules/cms/queries";
 import { CmsPageForm } from "@/components/admin/cms-page-form";
-
-const NAV = [
-  { href: "/admin/dashboard", label: "Overview" },
-  { href: "/admin/dashboard/content", label: "Content" },
-];
+import { ADMIN_NAV as NAV } from "@/components/dashboard/admin-nav";
 
 export default async function NewCmsPagePage() {
   const session = await auth();

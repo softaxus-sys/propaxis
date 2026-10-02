@@ -7,12 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/modules/auth/rbac";
 import { listCmsPages } from "@/modules/cms/queries";
+import { ADMIN_NAV as NAV } from "@/components/dashboard/admin-nav";
 import type { CmsPageStatus, CmsPageType } from "@prisma/client";
-
-const NAV = [
-  { href: "/admin/dashboard", label: "Overview" },
-  { href: "/admin/dashboard/content", label: "Content" },
-];
 
 const STATUS_VARIANT: Record<CmsPageStatus, "neutral" | "accent" | "success" | "info" | "dark"> = {
   DRAFT: "neutral",
