@@ -16,7 +16,8 @@ export async function verifyTurnstile(token: FormDataEntryValue | null): Promise
       body: new URLSearchParams({ secret, response: token }),
       signal: AbortSignal.timeout(10_000),
     });
-    const data = (await res.json()) as { success?: boolean };
+    const data = (await res.json()) as { success?: boolean; "error-codes"?: string[] };
+    if (data.success !== true) console.error("[turnstile] rejected:", data["error-codes"]?.join(", "));
     return data.success === true;
   } catch (err) {
     console.error("[turnstile] verification request failed:", err instanceof Error ? err.message : err);
