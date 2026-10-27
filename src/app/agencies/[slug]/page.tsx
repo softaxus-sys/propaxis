@@ -37,7 +37,7 @@ export default async function AgencyProfilePage({ params }: { params: Promise<{ 
         agents: { include: { user: true } },
         listings: {
           where: { status: "ACTIVE" },
-          include: { property: { include: { area: true } }, agent: { include: { user: true } }, agency: true },
+          include: { property: { include: { area: true } }, agent: { include: { user: true } }, agency: true, units: { where: { active: true } } },
           take: 9,
         },
         cmsPage: true,

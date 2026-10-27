@@ -22,28 +22,47 @@ const PAGE_SIZE = 12;
 export async function searchListings(rawInput: Partial<ListingSearchInput>) {
   const input = listingSearchSchema.parse(rawInput);
 
-  const where: Prisma.ListingWhereInput = {
-    status: "ACTIVE",
-    type: input.listingType,
-    property: {
-      ...(input.propertyType ? { type: input.propertyType } : {}),
-      ...(input.bedrooms !== undefined ? { bedrooms: { gte: input.bedrooms } } : {}),
-      area: {
-        ...(input.areaSlug ? { slug: input.areaSlug } : {}),
-        ...(input.location
-          ? { name: { contains: input.location, mode: "insensitive" as const } }
-          : {}),
-      },
-    },
+  const priceField = input.listingType === "SALE" ? "askingPriceAed" : "askingRentAedYear";
+  const unitPriceField = input.listingType === "SALE" ? "salePriceAed" : "rentPerYearAed";
+  const priceRange =
+    input.minPrice !== undefined || input.maxPrice !== undefined
+      ? {
+          ...(input.minPrice !== undefined ? { gte: input.minPrice } : {}),
+          ...(input.maxPrice !== undefined ? { lte: input.maxPrice } : {}),
+        }
+      : undefined;
+
+  // Building-level (Vrodux-synced) listings are matched on their units: a building is
+  // one result if ANY active unit satisfies every filter, and only those units come
+  // back with it. Listings without units (hand-made) match on their own fields.
+  const unitWhere: Prisma.ListingUnitWhereInput = {
+    active: true,
+    [unitPriceField]: priceRange ? { not: null, ...priceRange } : { not: null },
+    ...(input.propertyType ? { propertyType: input.propertyType } : {}),
+    ...(input.bedrooms !== undefined ? { bedrooms: { gte: input.bedrooms } } : {}),
   };
 
-  const priceField = input.listingType === "SALE" ? "askingPriceAed" : "askingRentAedYear";
-  if (input.minPrice !== undefined || input.maxPrice !== undefined) {
-    where[priceField] = {
-      ...(input.minPrice !== undefined ? { gte: input.minPrice } : {}),
-      ...(input.maxPrice !== undefined ? { lte: input.maxPrice } : {}),
-    };
-  }
+  const where: Prisma.ListingWhereInput = {
+    status: "ACTIVE",
+    property: {
+      area: {
+        ...(input.areaSlug ? { slug: input.areaSlug } : {}),
+        ...(input.location ? { name: { contains: input.location, mode: "insensitive" as const } } : {}),
+      },
+    },
+    OR: [
+      { units: { some: unitWhere } },
+      {
+        units: { none: {} },
+        type: input.listingType,
+        ...(priceRange ? { [priceField]: priceRange } : {}),
+        property: {
+          ...(input.propertyType ? { type: input.propertyType } : {}),
+          ...(input.bedrooms !== undefined ? { bedrooms: { gte: input.bedrooms } } : {}),
+        },
+      },
+    ],
+  };
 
   const [listings, total] = await Promise.all([
     db.listing.findMany({
@@ -52,6 +71,7 @@ export async function searchListings(rawInput: Partial<ListingSearchInput>) {
         property: { include: { area: true, building: true } },
         agent: { include: { user: true } },
         agency: true,
+        units: { where: unitWhere, orderBy: { [unitPriceField]: "asc" } },
       },
       orderBy: { publishedAt: "desc" },
       skip: (input.page - 1) * PAGE_SIZE,

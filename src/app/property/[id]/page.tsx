@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { BedDouble, Bath, Ruler, ShieldCheck, TrendingUp } from "lucide-react";
+import { BedDouble, Bath, Ruler, ShieldCheck, TrendingUp, Building2 } from "lucide-react";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { EnquiryForm } from "@/components/marketing/enquiry-form";
@@ -12,6 +12,7 @@ import { Badge, DemoDataBadge } from "@/components/ui/badge";
 import { formatAed } from "@/lib/utils";
 import { getPropertyPassport } from "@/modules/properties/passport";
 import { getDictionary } from "@/lib/i18n/server";
+import { bedroomLabel, summarizeUnits } from "@/modules/listings/unit-summary";
 
 const SITE_URL = "https://www.qasro.com";
 
@@ -24,16 +25,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const { listing } = passport;
   const { property } = listing;
-  const priceText =
+  const unitSummary = listing.units.length > 1 ? summarizeUnits(listing.units, listing.type) : null;
+  const basePriceText =
     listing.type === "SALE"
       ? formatAed(Number(listing.askingPriceAed ?? 0), { compact: true })
       : `${formatAed(Number(listing.askingRentAedYear ?? 0), { compact: true })}/yr`;
+  const priceText = unitSummary ? `from ${basePriceText}` : basePriceText;
   const verb = listing.type === "SALE" ? "for sale" : "for rent";
   const bedroomsText = property.bedrooms ? `${property.bedrooms}BR ` : "";
 
   const title = `${listing.title} — ${bedroomsText}${verb} in ${property.area.name} | ${priceText}`;
-  const description =
-    listing.description?.slice(0, 157) ||
+  const description = unitSummary
+    ? `${unitSummary.count} units ${verb} in ${listing.title}, ${property.area.name} — ${priceText}${unitSummary.mix.length ? ` (${unitSummary.mix.join(", ")})` : ""}.`
+    : listing.description?.slice(0, 157) ||
     `${bedroomsText}${property.type.toLowerCase()} ${verb} in ${property.area.name}, Dubai — ${priceText}. View photos, price and details on Qasro.`;
   const canonical = `${SITE_URL}/property/${id}`;
 
@@ -65,10 +69,15 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const { listing, comparables, marketMetric } = passport;
   const { property } = listing;
-  const price =
+  // A building with several vacant units shows a range-led summary instead of the
+  // single-listing bedroom/bath row; one unit (or none) reads as a normal listing.
+  const multiUnit = listing.units.length > 1;
+  const unitSummary = multiUnit ? summarizeUnits(listing.units, listing.type) : null;
+  const basePrice =
     listing.type === "SALE"
       ? formatAed(Number(listing.askingPriceAed ?? 0))
       : `${formatAed(Number(listing.askingRentAedYear ?? 0))}/yr`;
+  const price = multiUnit ? `${dict.common.from} ${basePrice}` : basePrice;
 
   const latestTransaction = property.transactions[0];
   const latestRental = property.rentalTransactions[0];
@@ -113,6 +122,14 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <p className="text-3xl font-semibold">{price}</p>
             </div>
 
+            {multiUnit && unitSummary ? (
+              <div className="mt-6 space-y-1 text-sand-200">
+                <p className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" /> {unitSummary.count} {dict.common.unitsAvailable}
+                </p>
+                {unitSummary.mix.length > 0 && <p>{unitSummary.mix.join(", ")}</p>}
+              </div>
+            ) : (
             <div className="mt-6 flex items-center gap-6 text-sand-200">
               {(property.bedrooms ?? 0) > 0 && (
                 <span className="flex items-center gap-2">
@@ -128,6 +145,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 </span>
               )}
             </div>
+            )}
             </PropertyGallery>
           </div>
 
@@ -146,6 +164,56 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                       ))}
                     </div>
                   )}
+                </Card>
+              )}
+
+              {multiUnit && (
+                <Card className="p-6">
+                  <h2 className="font-semibold text-ink-950">
+                    {dict.property.availableUnits} ({listing.units.length})
+                  </h2>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-start text-sm">
+                      <thead>
+                        <tr className="border-b border-sand-100 text-xs uppercase tracking-wide text-sand-500">
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colUnit}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colBeds}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colBaths}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colArea}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colFloor}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colFurnishing}</th>
+                          <th className="py-2 pe-3 text-start font-medium">{dict.property.colView}</th>
+                          <th className="py-2 text-end font-medium">{dict.property.colPrice}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-sand-100 text-ink-950">
+                        {listing.units.map((u) => {
+                          const rent = u.rentPerYearAed !== null ? Number(u.rentPerYearAed) : null;
+                          const sale = u.salePriceAed !== null ? Number(u.salePriceAed) : null;
+                          return (
+                            <tr key={u.id}>
+                              <td className="py-2.5 pe-3 font-medium">{u.unitNumber ?? "—"}</td>
+                              <td className="py-2.5 pe-3">{u.bedrooms === null ? "—" : u.bedrooms === 0 ? dict.property.studio : bedroomLabel(u.bedrooms)}</td>
+                              <td className="py-2.5 pe-3">{u.bathrooms ?? "—"}</td>
+                              <td className="py-2.5 pe-3">{u.areaSqft ? `${u.areaSqft.toLocaleString()} ${dict.common.sqft}` : "—"}</td>
+                              <td className="py-2.5 pe-3">{u.floor ?? "—"}</td>
+                              <td className="py-2.5 pe-3">{u.furnishing ?? "—"}</td>
+                              <td className="py-2.5 pe-3">{u.view ?? "—"}</td>
+                              <td className="py-2.5 text-end font-medium">
+                                {rent !== null && <div>{formatAed(rent)}/yr</div>}
+                                {sale !== null && (
+                                  <div>
+                                    {rent !== null && <span className="text-xs font-normal text-sand-500">{dict.property.forSaleLabel} </span>}
+                                    {formatAed(sale)}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </Card>
               )}
 

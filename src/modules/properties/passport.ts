@@ -24,6 +24,7 @@ export async function getPropertyPassport(listingId: string) {
       },
       agent: { include: { user: true, agency: true } },
       agency: true,
+      units: { where: { active: true }, orderBy: [{ bedrooms: "asc" }, { unitNumber: "asc" }] },
     },
   });
 

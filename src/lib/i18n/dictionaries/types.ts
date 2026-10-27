@@ -80,6 +80,8 @@ export type Dictionary = {
     beds: string;
     baths: string;
     sqft: string;
+    from: string;
+    unitsAvailable: string;
     forSale: string;
     forRent: string;
     demoData: string;
@@ -123,6 +125,19 @@ export type Dictionary = {
     estValuationRange: string;
     noHistoryYet: string;
     comparableListings: string;
+    availableUnits: string;
+    colUnit: string;
+    colBeds: string;
+    colBaths: string;
+    colArea: string;
+    colFloor: string;
+    colFurnishing: string;
+    colView: string;
+    colPrice: string;
+    fromPrice: string;
+    studio: string;
+    forSaleLabel: string;
+    forRentLabel: string;
     listedBy: string;
     interestedGetInTouch: string;
     unverified: string;

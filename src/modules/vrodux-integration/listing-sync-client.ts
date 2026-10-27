@@ -111,10 +111,12 @@ export type VroduxProperty = {
   totalArea?: number | null;
   totalUnits?: number | null;
   availableUnits?: number | null;
+  vacantUnits?: number | null; // newer name for availableUnits
   developer?: string | null;
   description?: string | null;
   publishedAt?: string | null;
   imageUrls?: string[] | null;
+  images?: string[] | null; // newer name for imageUrls; first = cover
   units?: VroduxUnit[] | null;
 };
 

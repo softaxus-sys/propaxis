@@ -19,7 +19,7 @@ export async function getAgentBySlug(slug: string) {
       agency: true,
       listings: {
         where: { status: "ACTIVE" },
-        include: { property: { include: { area: true } } },
+        include: { property: { include: { area: true } }, units: { where: { active: true } } },
         orderBy: { publishedAt: "desc" },
       },
       // Editor-authored long-form profile content, if linked and PUBLISHED — see

@@ -7,7 +7,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries/types";
 export async function FeaturedListings({ dict }: { dict: Dictionary }) {
   const listings = await db.listing.findMany({
     where: { status: "ACTIVE" },
-    include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } }, agency: true },
+    include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } }, agency: true, units: { where: { active: true } } },
     orderBy: { publishedAt: "desc" },
     take: 4,
   });

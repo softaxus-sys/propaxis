@@ -3,16 +3,18 @@
  * from erp.vrodux.com on 2026-09-30 (agency cmumxxxdd0000kz040swh8fz5), not guesswork.
  * See the shape documented at the top of listing-sync-client.ts.
  *
- * One Vrodux "property" is a BUILDING that can contain several units (`property.units`)
- * — e.g. one tower with a handful of published apartments — not a flat one-row-per-
- * listing shape. That maps onto this schema's existing Building → Property → Listing
- * hierarchy far better than treating each Vrodux property as one Qasro Property would:
- *   Vrodux property  → Qasro Building (the physical tower/building)
- *   Vrodux unit      → Qasro Property (the physical unit) + Listing (the commercial offer)
+ * One Vrodux "property" is a BUILDING that can contain several vacant units
+ * (`property.units`). It maps to ONE Qasro Listing, with its units as child
+ * ListingUnit rows:
+ *   Vrodux property  → Qasro Building + one Property + one Listing (the card/page)
+ *   Vrodux unit      → ListingUnit on that listing, keyed by the Vrodux unit id
+ * (An earlier version made a Property + Listing per unit, so a building with 8 vacant
+ * apartments showed up as 8 listings — scripts/merge-vrodux-unit-listings.ts folds
+ * those legacy rows back into one.)
  *
- * Image URLs (`imageUrls`) are RELATIVE and signed+expiring (`?exp=...&sig=...`) — we
- * host-prefix them for storage but never treat a stored URL as long-lived; a fresh pull
- * always overwrites them with whatever Vrodux currently signs.
+ * Image URLs are RELATIVE and signed+expiring (`?exp=...&sig=...`) — we host-prefix
+ * them for storage but never treat a stored URL as long-lived; a fresh pull always
+ * overwrites them with whatever Vrodux currently signs.
  */
 
 import { db } from "@/lib/db";
@@ -55,55 +57,67 @@ function mapPropertyType(unitType: string | null | undefined, propertyType: stri
 }
 
 type MappedUnit = {
-  vroduxPropertyId: string; // `${property.id}:${unit.id}` — see upsertSyncedListing
-  title: string;
-  description?: string;
+  vroduxUnitId: string;
+  unitNumber?: string;
   propertyType: PropertyType;
-  listingType: "SALE" | "RENT";
+  rentPerYearAed?: number;
+  salePriceAed?: number;
   bedrooms?: number;
   bathrooms?: number;
   areaSqft?: number;
-  unitNumber?: string;
-  priceAed?: number;
-  cityName: string;
-  emirate: string;
-  addressLine?: string;
-  images: string[];
+  floor?: number;
+  furnishing?: string;
+  view?: string;
+  parking?: number;
 };
 
-/** One Vrodux unit only becomes a listing if it has a usable price — a unit with
- * neither a sale price nor a rent set isn't something we can publish as a priced
- * listing, so it's skipped rather than synced with a blank/zero price. */
+/** A unit is only publishable with a usable price — rentPerYear and/or salePrice above
+ * 0 (a unit can be either, or both). One with neither is skipped rather than shown
+ * with a blank/zero price. */
 function mapVroduxUnit(property: VroduxProperty, unit: VroduxUnit): MappedUnit | null {
   if (!unit.id) return null;
 
-  const salePrice = typeof unit.salePrice === "number" && unit.salePrice > 0 ? unit.salePrice : undefined;
-  const rent = typeof unit.rentPerYear === "number" && unit.rentPerYear > 0 ? unit.rentPerYear : undefined;
-  if (salePrice === undefined && rent === undefined) return null;
-
-  const listingType: "SALE" | "RENT" = salePrice !== undefined ? "SALE" : "RENT";
-  const priceAed = listingType === "SALE" ? salePrice : rent;
-
-  const buildingName = property.name?.trim();
-  const titleParts = [buildingName, unit.unitType, unit.bedrooms ? `${unit.bedrooms}BR` : undefined].filter(Boolean);
-  const title = titleParts.length ? titleParts.join(" — ") : `Unit ${unit.unitNumber ?? unit.id}`;
-
-  const images = (property.imageUrls ?? []).map(toAbsoluteImageUrl);
+  const salePriceAed = typeof unit.salePrice === "number" && unit.salePrice > 0 ? unit.salePrice : undefined;
+  const rentPerYearAed = typeof unit.rentPerYear === "number" && unit.rentPerYear > 0 ? unit.rentPerYear : undefined;
+  if (salePriceAed === undefined && rentPerYearAed === undefined) return null;
 
   return {
-    vroduxPropertyId: `${property.id}:${unit.id}`,
-    title,
-    description: property.description?.trim() || undefined,
+    vroduxUnitId: unit.id,
+    unitNumber: unit.unitNumber ?? undefined,
     propertyType: mapPropertyType(unit.unitType, property.propertyType),
-    listingType,
+    rentPerYearAed,
+    salePriceAed,
     bedrooms: unit.bedrooms ?? undefined,
     bathrooms: unit.bathrooms ?? undefined,
     areaSqft: unit.area && unit.area > 0 ? unit.area : undefined,
-    unitNumber: unit.unitNumber ?? undefined,
-    priceAed,
-    cityName: property.city?.trim() || "Dubai",
-    emirate: property.emirate?.trim() || "Dubai",
-    addressLine: property.address?.trim() || undefined,
+    floor: typeof unit.floor === "number" ? Math.round(unit.floor) : undefined,
+    furnishing: unit.furnishing?.trim() || undefined,
+    view: unit.view?.trim() || undefined,
+    parking: unit.parking ?? undefined,
+  };
+}
+
+/** What the Listing row itself carries for a building: its title, cover and headline
+ * price (the lowest unit price per type). Listing.type is the type with more units
+ * (rent wins ties) — search and the card look at the units themselves, so this only
+ * drives the badge and consumers that predate units. */
+function summarizeBuildingListing(property: VroduxProperty, units: MappedUnit[]) {
+  const rents = units.filter((u) => u.rentPerYearAed !== undefined);
+  const sales = units.filter((u) => u.salePriceAed !== undefined);
+  const listingType: "SALE" | "RENT" = rents.length >= sales.length ? "RENT" : "SALE";
+
+  const minRent = rents.length ? Math.min(...rents.map((u) => u.rentPerYearAed as number)) : null;
+  const minSale = sales.length ? Math.min(...sales.map((u) => u.salePriceAed as number)) : null;
+
+  // `images` is the newer field name, `imageUrls` the one confirmed on 2026-09-30.
+  const images = (property.images ?? property.imageUrls ?? []).map(toAbsoluteImageUrl);
+
+  return {
+    title: property.name?.trim() || `Vrodux property ${property.reference ?? property.id}`,
+    description: property.description?.trim() || undefined,
+    listingType,
+    askingRentAedYear: minRent,
+    askingPriceAed: minSale,
     images,
   };
 }
@@ -172,17 +186,25 @@ export async function syncAgencyListings(connectionId: string, trigger: SyncTrig
       return { pulled: properties.length, upserted: 0, delisted: 0 };
     }
 
+    // upserted counts listings (buildings), not units.
     let upserted = 0;
     for (const property of properties) {
+      if (!property.id) continue;
       const area = await resolveArea(property.city?.trim() || "Dubai", property.emirate?.trim() || "Dubai");
       const building = await resolveBuilding(property, area.id);
+      const units = (property.units ?? []).map((u) => mapVroduxUnit(property, u)).filter((u): u is MappedUnit => !!u);
 
-      for (const unit of property.units ?? []) {
-        const mapped = mapVroduxUnit(property, unit);
-        if (!mapped) continue;
-        await upsertSyncedListing(connection.agencyId, connectionId, owner.id, building.id, area.id, mapped, pullStartedAt);
-        upserted++;
-      }
+      await upsertSyncedBuildingListing(
+        connection.agencyId,
+        connectionId,
+        owner.id,
+        building.id,
+        area.id,
+        property,
+        units,
+        pullStartedAt,
+      );
+      upserted++;
     }
 
     const delisted = await delistMissing(connectionId, pullStartedAt);
@@ -214,100 +236,112 @@ async function recordPullOutcome(connectionId: string, status: string, trigger: 
   });
 }
 
-async function upsertSyncedListing(
+/** One Vrodux property → one Listing (+ its Property and join row), with the vacant
+ * units reconciled as child rows. Matching is on the Vrodux property id and, inside it,
+ * the Vrodux unit id, so re-running never duplicates anything. */
+async function upsertSyncedBuildingListing(
   agencyId: string,
   connectionId: string,
   agentId: string,
   buildingId: string,
   areaId: string,
-  mapped: MappedUnit,
+  property: VroduxProperty,
+  units: MappedUnit[],
   seenAt: Date,
 ): Promise<void> {
+  const summary = summarizeBuildingListing(property, units);
+  // A single-unit building should read as a normal single listing, so the unit's own
+  // specs go on the Property; a multi-unit one has no single bedroom count.
+  const single = units.length === 1 ? units[0] : undefined;
+  const propertyData = {
+    type: single ? single.propertyType : mapPropertyType(null, property.propertyType),
+    bedrooms: single?.bedrooms ?? null,
+    bathrooms: single?.bathrooms ?? null,
+    areaSqft: single?.areaSqft ?? null,
+    unitNumber: single?.unitNumber ?? null,
+    addressLine: property.address?.trim() || null,
+    areaId,
+    buildingId,
+  };
+  // No vacant, priced units → nothing to show; keep the row (the property is still in
+  // the feed) but hide it until units come back.
+  const status = units.length > 0 ? ("ACTIVE" as const) : ("WITHDRAWN" as const);
+  const listingData = {
+    title: summary.title,
+    description: summary.description,
+    type: summary.listingType,
+    status,
+    images: summary.images,
+    askingRentAedYear: summary.askingRentAedYear,
+    askingPriceAed: summary.askingPriceAed,
+  };
+
   const existing = await db.vroduxSyncedListing.findUnique({
-    where: { connectionId_vroduxPropertyId: { connectionId, vroduxPropertyId: mapped.vroduxPropertyId } },
+    where: { connectionId_vroduxPropertyId: { connectionId, vroduxPropertyId: property.id } },
     include: { listing: true },
   });
 
-  const priceField =
-    mapped.listingType === "RENT" ? { askingRentAedYear: mapped.priceAed } : { askingPriceAed: mapped.priceAed };
-
+  let listingId: string;
   if (existing) {
-    await db.property.update({
-      where: { id: existing.listing.propertyId },
-      data: {
-        type: mapped.propertyType,
-        bedrooms: mapped.bedrooms,
-        bathrooms: mapped.bathrooms,
-        areaSqft: mapped.areaSqft,
-        unitNumber: mapped.unitNumber,
-        addressLine: mapped.addressLine,
-        areaId,
-        buildingId,
-      },
-    });
-    await db.listing.update({
-      where: { id: existing.listingId },
-      data: {
-        title: mapped.title,
-        description: mapped.description,
-        type: mapped.listingType,
-        status: "ACTIVE",
-        images: mapped.images,
-        askingPriceAed: null,
-        askingRentAedYear: null,
-        ...priceField,
-      },
-    });
+    listingId = existing.listingId;
+    await db.property.update({ where: { id: existing.listing.propertyId }, data: propertyData });
+    await db.listing.update({ where: { id: listingId }, data: listingData });
     await db.vroduxSyncedListing.update({ where: { id: existing.id }, data: { lastSeenAt: seenAt } });
-    return;
+  } else {
+    const created = await db.property.create({ data: propertyData });
+    const listing = await db.listing.create({
+      data: {
+        ...listingData,
+        propertyId: created.id,
+        agentId,
+        agencyId,
+        // Matches what a manually-published listing gets (listings/actions.ts) — without
+        // this, every synced listing sorts last in every publishedAt-desc query (search,
+        // homepage featured, agent/area pages), since null sorts after any real date.
+        publishedAt: new Date(),
+      },
+    });
+    listingId = listing.id;
+    await db.vroduxSyncedListing.create({
+      data: { connectionId, vroduxPropertyId: property.id, listingId, lastSeenAt: seenAt },
+    });
   }
 
-  const property = await db.property.create({
-    data: {
-      type: mapped.propertyType,
-      bedrooms: mapped.bedrooms,
-      bathrooms: mapped.bathrooms,
-      areaSqft: mapped.areaSqft,
-      unitNumber: mapped.unitNumber,
-      addressLine: mapped.addressLine,
-      areaId,
-      buildingId,
-    },
-  });
-
-  const listing = await db.listing.create({
-    data: {
-      propertyId: property.id,
-      title: mapped.title,
-      description: mapped.description,
-      type: mapped.listingType,
-      status: "ACTIVE",
-      images: mapped.images,
-      agentId,
-      agencyId,
-      // Matches what a manually-published listing gets (listings/actions.ts) — without
-      // this, every synced listing sorts last in every publishedAt-desc query (search,
-      // homepage featured, agent/area pages), since null sorts after any real date.
-      publishedAt: new Date(),
-      ...priceField,
-    },
-  });
-
-  await db.vroduxSyncedListing.create({
-    data: {
-      connectionId,
-      vroduxPropertyId: mapped.vroduxPropertyId,
-      listingId: listing.id,
+  for (const unit of units) {
+    const data = {
+      unitNumber: unit.unitNumber ?? null,
+      propertyType: unit.propertyType,
+      rentPerYearAed: unit.rentPerYearAed ?? null,
+      salePriceAed: unit.salePriceAed ?? null,
+      bedrooms: unit.bedrooms ?? null,
+      bathrooms: unit.bathrooms ?? null,
+      areaSqft: unit.areaSqft ?? null,
+      floor: unit.floor ?? null,
+      furnishing: unit.furnishing ?? null,
+      view: unit.view ?? null,
+      parking: unit.parking ?? null,
+      active: true,
       lastSeenAt: seenAt,
-    },
+    };
+    await db.listingUnit.upsert({
+      where: { listingId_vroduxUnitId: { listingId, vroduxUnitId: unit.vroduxUnitId } },
+      update: data,
+      create: { listingId, vroduxUnitId: unit.vroduxUnitId, ...data },
+    });
+  }
+
+  // Units that left the feed are hidden, not deleted, so one that comes back reuses its row.
+  await db.listingUnit.updateMany({
+    where: { listingId, active: true, lastSeenAt: { lt: seenAt } },
+    data: { active: false },
   });
 }
 
-/** A synced listing not seen in the latest pull means the agency un-published it on
- * Vrodux (or it no longer exists) — withdraw it on Qasro too rather than leaving it
- * live forever (docs/ARCHITECTURE.md §7.2). We keep the join row (rather than deleting
- * it) so if the same unit reappears later we reactivate the same Listing instead of
- * creating a duplicate. */
+/** A synced listing not seen in the latest pull means the agency un-published the
+ * property on Vrodux (or it no longer exists) — withdraw it and hide its units on Qasro
+ * too rather than leaving it live forever (docs/ARCHITECTURE.md §7.2). We keep the join
+ * row (rather than deleting it) so if the same property reappears later we reactivate
+ * the same Listing instead of creating a duplicate. */
 async function delistMissing(connectionId: string, pullStartedAt: Date): Promise<number> {
   const stale = await db.vroduxSyncedListing.findMany({
     where: { connectionId, lastSeenAt: { lt: pullStartedAt } },
@@ -318,6 +352,7 @@ async function delistMissing(connectionId: string, pullStartedAt: Date): Promise
     if (row.listing.status !== "WITHDRAWN") {
       await db.listing.update({ where: { id: row.listingId }, data: { status: "WITHDRAWN" } });
     }
+    await db.listingUnit.updateMany({ where: { listingId: row.listingId, active: true }, data: { active: false } });
   }
 
   return stale.length;

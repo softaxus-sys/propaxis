@@ -624,11 +624,50 @@ model Listing {
 
   vroduxSync VroduxSyncedListing?
 
+  // Vacant units inside this listing. Vrodux-synced listings are one per BUILDING with
+  // their units here; hand-made listings have none (the listing is the single unit).
+  units ListingUnit[]
+
   @@index([propertyId])
   @@index([agentId])
   @@index([status])
   @@index([type])
   @@map("listings")
+}
+
+// One vacant unit of a building-level (Vrodux-synced) Listing, keyed by Vrodux's unit
+// id so re-syncs update in place. A unit can be for rent, for sale, or (rarely) both,
+// hence two nullable prices rather than a type + one price. Units that vanish from the
+// feed are hidden (active=false), not deleted, so they reactivate if they come back.
+model ListingUnit {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  vroduxUnitId String
+  unitNumber   String?
+  propertyType PropertyType
+
+  rentPerYearAed Decimal? @db.Decimal(14, 2)
+  salePriceAed   Decimal? @db.Decimal(14, 2)
+
+  bedrooms   Int?
+  bathrooms  Int?
+  areaSqft   Float?
+  floor      Int?
+  furnishing String?
+  view       String?
+  parking    Int?
+
+  active     Boolean  @default(true)
+  lastSeenAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listingId, vroduxUnitId])
+  @@index([listingId, active])
+  @@map("listing_units")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -31,7 +31,7 @@ export async function getAreaBySlug(slug: string) {
 
   const listings = await db.listing.findMany({
     where: { status: "ACTIVE", property: { areaId: area.id } },
-    include: { property: { include: { area: true } }, agent: { include: { user: true } } },
+    include: { property: { include: { area: true } }, agent: { include: { user: true } }, units: { where: { active: true } } },
     orderBy: { publishedAt: "desc" },
     take: 12,
   });

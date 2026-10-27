@@ -17,7 +17,7 @@ export default async function CommercialPage() {
   const [listings, dict] = await Promise.all([
     db.listing.findMany({
       where: { status: "ACTIVE", property: { type: { in: ["OFFICE", "RETAIL", "WAREHOUSE"] } } },
-      include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } }, agency: true },
+      include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } }, agency: true, units: { where: { active: true } } },
       orderBy: { publishedAt: "desc" },
       take: 24,
     }),

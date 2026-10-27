@@ -24,7 +24,7 @@ export async function getBuildingBySlug(slug: string) {
 
   const listings = await db.listing.findMany({
     where: { status: "ACTIVE", property: { buildingId: building.id } },
-    include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } } },
+    include: { property: { include: { area: true, building: true } }, agent: { include: { user: true } }, units: { where: { active: true } } },
     orderBy: { publishedAt: "desc" },
     take: 12,
   });

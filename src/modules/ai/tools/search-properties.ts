@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AiTool } from "./types";
 import { searchListings, listingSearchSchema } from "@/modules/listings/search";
+import { summarizeUnits } from "@/modules/listings/unit-summary";
 
 const inputSchema = listingSearchSchema.partial({ listingType: true, page: true });
 
@@ -27,10 +28,15 @@ export const searchPropertiesTool: AiTool<z.infer<typeof inputSchema>> = {
   },
   inputSchema,
   execute: async (input) => {
-    const result = await searchListings({ listingType: "SALE", ...input });
+    const listingType = input.listingType ?? "SALE";
+    const result = await searchListings({ listingType, ...input });
     return {
       total: result.total,
-      listings: result.listings.map((l) => ({
+      listings: result.listings.map((l) => {
+        // Building-level listings carry the matching units; summarise them instead of
+        // reporting the building's headline price as if it were one unit.
+        const units = summarizeUnits(l.units, listingType);
+        return {
         id: l.id,
         title: l.title,
         type: l.type,
@@ -41,8 +47,10 @@ export const searchPropertiesTool: AiTool<z.infer<typeof inputSchema>> = {
         askingPriceAed: l.askingPriceAed,
         askingRentAedYear: l.askingRentAedYear,
         isDemoData: l.isDemoData,
+        ...(units ? { matchingUnits: units.count, fromAed: units.min, toAed: units.max, bedroomMix: units.mix } : {}),
         url: `/property/${l.id}`,
-      })),
+        };
+      }),
     };
   },
 };
